@@ -6,16 +6,16 @@ set -e
 #
 # Required parameters
 if [ -z "${plist_path}" ] ; then
-	echo " [!] Missing required input: plist_path"
-	exit 1
+  echo " [!] Missing required input: plist_path"
+  exit 1
 fi
 if [ ! -f "${plist_path}" ] ; then
-	echo " [!] Specified Info.plist path is not a file: ${plist_path}"
-	exit 1
+  echo " [!] File doesn't exist at specified Info.plist path: ${plist_path}"
+  exit 1
 fi
 
 if [ -z "${build_version}" ] ; then
-	echo " [!] You didn't set the version number manually, using build_version"
+  echo " [!] You didn't set the version number manually, using build_version"
   exit 1
 fi
 
