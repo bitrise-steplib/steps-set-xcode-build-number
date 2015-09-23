@@ -1,6 +1,8 @@
-title: Set version number
-summary: "Sets the value of Bundle version in the specified Info.plist file"
-description: "Set the value of Bundle version in the project's Info.plist file to the specified version number or to the BITRISE_BUILD_NUMBER"
+title: Set Xcode Project Build Number
+summary: |-
+  Sets the value of Bundle version in the specified Info.plist file
+description: |-
+  Set the value of Bundle version in the project's Info.plist file to the specified version number.
 website: https://github.com/bitrise-io/set-xcode-build-number
 source_code_url: https://github.com/bitrise-io/set-xcode-build-number
 support_url: https://github.com/bitrise-io/set-xcode-build-number/issues
@@ -21,7 +23,7 @@ run_if: ".IsCI"
 inputs:
   - plist_path:
     opts:
-      title: "Plist path"
+      title: "Info.plist file path"
       summary: ""
       description: |
         Path to the given project's Info.plist file.
@@ -30,10 +32,8 @@ inputs:
       is_dont_change_value: false
   - build_version: "$BITRISE_BUILD_NUMBER"
     opts:
-      title: "Bitrise Build Number"
-      summary: "The version number of the current build"
-      description: |
-        When running the Workflow on Bitrise by default the build number is stored in this variable.
+      title: "Build Number"
+      summary: "Set the Build Number / Bundle Version to this value."
       is_required: true
       is_expand: true
       is_dont_change_value: false

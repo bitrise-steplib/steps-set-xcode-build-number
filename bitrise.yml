@@ -3,8 +3,8 @@ default_step_lib_source: https://github.com/bitrise-io/bitrise-steplib.git
 
 app:
   envs:
-  # define these in your .bitrise.secrets.yml
   - BITRISE_BUILD_NUMBER: "43"
+  # define these in your .bitrise.secrets.yml
   - my_plist_path:
 
 workflows:
@@ -20,11 +20,11 @@ workflows:
         - content: |-
             #!/bin/bash
             set -e
-            tmp_pth="$(pwd)/_tmp"
-            echo " * tmp_pth: ${tmp_pth}"
+            test_workdir_pth="$(pwd)/_tmp"
+            echo " * test_workdir_pth: ${test_workdir_pth}"
             set -v
-            mkdir -p "${tmp_pth}"
-            envman add --key BITRISE_SOURCE_DIR --value "${tmp_pth}"
+            mkdir -p "${test_workdir_pth}"
+            envman add --key BITRISE_SOURCE_DIR --value "${test_workdir_pth}"
     - path::./:
         run_if: true
         inputs:

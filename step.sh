@@ -1,16 +1,7 @@
 #!/bin/bash
 
-#
-# Don't forget to replace the my_plist_path environment
-#  in your Workflow with your project's Info.plist path!
-#
-
-THIS_SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-
 # exit if a command fails
 set -e
-# verbose / debug print commands
-set -v
 
 #
 # Required parameters
@@ -32,25 +23,22 @@ fi
 # --- Configs:
 
 CONFIG_project_info_plist_path="${plist_path}"
-
 CONFIG_new_bundle_version="${BITRISE_BUILD_NUMBER}"
 
-echo " (i) Info.plist path: ${CONFIG_project_info_plist_path}"
+echo " (i) Provided Info.plist path: ${CONFIG_project_info_plist_path}"
 echo " (i) Build number (bundle version): ${CONFIG_new_bundle_version}"
 
 
 # ---------------------
 # --- Main:
 
-echo "---- Current Bundle Version:"
+# verbose / debug print commands
+set -v
+
+# ---- Current Bundle Version:
 /usr/libexec/PlistBuddy -c "Print CFBundleVersion" "${CONFIG_project_info_plist_path}"
 
-echo "---- Set Bundle Version:"
-echo " * to: ${CONFIG_new_bundle_version}"
+# ---- Set Bundle Version:
 /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${CONFIG_new_bundle_version}" "${CONFIG_project_info_plist_path}"
 
-echo "-------------------------"
-
-echo
-echo "==> Finished with success"
-echo
+# ==> Bundle Version / Build Number changed
