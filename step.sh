@@ -15,7 +15,7 @@ if [ ! -f "${plist_path}" ] ; then
 fi
 
 if [ -z "${build_version}" ] ; then
-  echo " [!] You didn't set the version number manually, using build_version"
+  echo " [!] No build_version specified!"
   exit 1
 fi
 
@@ -23,7 +23,7 @@ fi
 # --- Configs:
 
 CONFIG_project_info_plist_path="${plist_path}"
-CONFIG_new_bundle_version="${BITRISE_BUILD_NUMBER}"
+CONFIG_new_bundle_version="${build_version}"
 
 echo " (i) Provided Info.plist path: ${CONFIG_project_info_plist_path}"
 echo " (i) Build number (bundle version): ${CONFIG_new_bundle_version}"

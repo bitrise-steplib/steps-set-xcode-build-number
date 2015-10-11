@@ -29,3 +29,4 @@ workflows:
         run_if: true
         inputs:
         - plist_path: ${my_plist_path}
+        - build_version: ${BITRISE_BUILD_NUMBER}
