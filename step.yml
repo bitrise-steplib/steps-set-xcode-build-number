@@ -34,7 +34,14 @@ inputs:
   - build_version: "$BITRISE_BUILD_NUMBER"
     opts:
       title: "Build Number"
-      summary: "Set the Build Number / Bundle Version to this value."
+      summary: "Set the CFBundleVersion to this value."
       is_required: true
+      is_expand: true
+      is_dont_change_value: false
+  - build_short_version_string: 
+    opts: 
+      title: "Build Number String"
+      summary: "(Optional) Set the CFBundleShortVersionString to this value."
+      is_required: false
       is_expand: true
       is_dont_change_value: false
