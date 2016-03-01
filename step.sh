@@ -24,10 +24,16 @@ fi
 
 CONFIG_project_info_plist_path="${plist_path}"
 CONFIG_new_bundle_version="${build_version}"
+CONFIG_new_short_bundle_short_version_string="${build_short_version_string}"
 
 echo " (i) Provided Info.plist path: ${CONFIG_project_info_plist_path}"
 echo " (i) Build number (bundle version): ${CONFIG_new_bundle_version}"
 
+if [ -n "${CONFIG_new_short_bundle_short_version_string}" ] ; then
+  echo " (i) Build number (bundle short version string): ${CONFIG_new_short_bundle_short_version_string}"
+else
+  echo " (i) Build number (bundle short version string): Not specified"
+fi
 
 # ---------------------
 # --- Main:
@@ -41,4 +47,11 @@ set -v
 # ---- Set Bundle Version:
 /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${CONFIG_new_bundle_version}" "${CONFIG_project_info_plist_path}"
 
-# ==> Bundle Version / Build Number changed
+if [ -n "${CONFIG_new_short_bundle_short_version_string}" ] ; then
+  # ---- Current Bundle Short Version String:
+  /usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" "${CONFIG_project_info_plist_path}"
+
+  # ---- Set Bundle Short Version String:
+  /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString ${CONFIG_new_short_bundle_short_version_string}" "${CONFIG_project_info_plist_path}"
+fi
+# ==> Bundle Version and Short Version changed
