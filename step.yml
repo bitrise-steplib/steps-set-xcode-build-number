@@ -31,11 +31,17 @@ inputs:
       description: |
         Set the CFBundleVersion to this value.
 
-        See in Xcode:
+        You can find this in Xcode:
+
         - Select the your project in Project navigator
         - Under General tab, in Identity section
         - Build field
       is_required: true
+  - build_version_offset:
+    opts:
+      title: "Build Number Offset"
+      description: |
+        This offset will be added to `build_version` input's value.
   - build_short_version_string:
     opts:
       title: "Version Number"

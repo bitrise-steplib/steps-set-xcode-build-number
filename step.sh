@@ -23,14 +23,24 @@ fi
 # --- Configs:
 
 CONFIG_project_info_plist_path="${plist_path}"
-CONFIG_new_bundle_version="${build_version}"
 CONFIG_new_build_short_version_string="${build_short_version_string}"
+CONFIG_new_bundle_version="${build_version}"
 
 echo " (i) Provided Info.plist path: ${CONFIG_project_info_plist_path}"
+
 if [ ! -z "${CONFIG_new_build_short_version_string}" ] ; then
   echo " (i) Version number: ${CONFIG_new_build_short_version_string}"
 fi
-echo " (i) Build number: ${CONFIG_new_bundle_version}"
+
+if [ ! -z "${build_version_offset}" ] ; then
+  echo " (i) Build number offset: ${build_version_offset}"
+
+  CONFIG_new_bundle_version=$((${build_version} + ${build_version_offset}))
+
+  echo " (i) Build number: ${CONFIG_new_bundle_version}"
+else
+  echo " (i) Build number: ${CONFIG_new_bundle_version}"
+fi
 
 
 # ---------------------

@@ -27,6 +27,7 @@ workflows:
         - plist_path: ${MY_PLIST_PATH}
         - build_short_version_string: "1"
         - build_version: "2"
+        - build_version_offset: "10"
 
   # ----------------------------------------------------------------
   # --- workflow to Release a new version with auto version bump
