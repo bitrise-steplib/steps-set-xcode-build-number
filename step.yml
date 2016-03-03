@@ -48,7 +48,8 @@ inputs:
       description: |
         Set the CFBundleShortVersionString to this value.
 
-        See in Xcode:
+        You can find this in Xcode:
+
         - Select the your project in Project navigator
         - Under General tab, in Identity section
         - Version field
