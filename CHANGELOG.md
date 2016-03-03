@@ -4,6 +4,17 @@
 
 ### 1.0.2 (2016 Mar 03)
 
+* [25d36ee] step.yml fix
+* [b7e559d] v1.0.2
+* [3961682] Merge pull request #6 from bitrise-io/develop
+* [c863dc1] release config
+* [6003a9c] build version offset
+* [c5fa855] set Version Number
+* [69b6750] Merge pull request #4 from bitrise-io/develop
+* [3eb7272] bitrise.yml updates
+
+### 1.0.2 (2016 Mar 03)
+
 * [3961682] Merge pull request #6 from bitrise-io/develop
 * [c863dc1] release config
 * [6003a9c] build version offset
