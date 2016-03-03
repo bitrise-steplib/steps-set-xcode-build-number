@@ -3,35 +3,31 @@ default_step_lib_source: https://github.com/bitrise-io/bitrise-steplib.git
 
 app:
   envs:
-  - BITRISE_BUILD_NUMBER: "43"
   # define these in your .bitrise.secrets.yml
-  - my_plist_path:
+  - MY_PLIST_PATH: $MY_PLIST_PATH
 
 workflows:
   # ----------------------------------------------------------------
   # --- workflow to test this step
   test:
     steps:
-    - script:
+    - change-workdir:
         title: Switch working dir to test/_tmp dir
         description: |-
           To prevent step testing issues, like referencing relative
           files with just './some-file', which would work for local tests
           but not if the step is included in another bitrise.yml!
+        run_if: true
         inputs:
-        - content: |-
-            #!/bin/bash
-            set -e
-            test_workdir_pth="$(pwd)/_tmp"
-            echo " * test_workdir_pth: ${test_workdir_pth}"
-            set -v
-            mkdir -p "${test_workdir_pth}"
-            envman add --key BITRISE_SOURCE_DIR --value "${test_workdir_pth}"
+        - path: ./_tmp
+        - is_create_path: true
     - path::./:
         run_if: true
         inputs:
-        - plist_path: ${my_plist_path}
-        - build_version: ${BITRISE_BUILD_NUMBER}
+        - plist_path: ${MY_PLIST_PATH}
+        - build_short_version_string: "1"
+        - build_version: "2"
+        - build_version_offset: "10"
 
   # ----------------------------------------------------------------
   # --- workflow to Release a new version with auto version bump

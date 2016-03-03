@@ -14,9 +14,6 @@ project_type_tags:
 type_tags:
   - build
   - xcode
-is_requires_admin_user: false
-is_always_run: false
-is_skippable: false
 dependencies:
   - manager: _
     name: xcode
@@ -25,16 +22,33 @@ inputs:
   - plist_path:
     opts:
       title: "Info.plist file path"
-      summary: ""
       description: |
         Path to the given project's Info.plist file.
       is_required: true
-      is_expand: true
-      is_dont_change_value: false
   - build_version: "$BITRISE_BUILD_NUMBER"
     opts:
       title: "Build Number"
-      summary: "Set the Build Number / Bundle Version to this value."
+      description: |
+        Set the CFBundleVersion to this value.
+
+        You can find this in Xcode:
+
+        - Select the your project in Project navigator
+        - Under General tab, in Identity section
+        - Build field
       is_required: true
-      is_expand: true
-      is_dont_change_value: false
+  - build_version_offset:
+    opts:
+      title: "Build Number Offset"
+      description: |
+        This offset will be added to `build_version` input's value.
+  - build_short_version_string:
+    opts:
+      title: "Version Number"
+      description: |
+        Set the CFBundleShortVersionString to this value.
+
+        See in Xcode:
+        - Select the your project in Project navigator
+        - Under General tab, in Identity section
+        - Version field
