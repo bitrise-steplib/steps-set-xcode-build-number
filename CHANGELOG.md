@@ -1,6 +1,13 @@
-## Changelog (Current version: 1.0.2)
+## Changelog (Current version: 1.0.3)
 
 -----------------
+
+### 1.0.3 (2016 Apr 11)
+
+* [41b1608] prepare for release
+* [f1b4465] Merge pull request #7 from tiagomartinho/master
+* [3112ea6] Use step.deps instead of step.dependencies
+* [f9b9e87] CHANGELOG fix
 
 ### 1.0.2 (2016 Mar 03)
 
@@ -29,4 +36,4 @@
 
 -----------------
 
-Updated: 2016 Mar 03
+Updated: 2016 Apr 11
