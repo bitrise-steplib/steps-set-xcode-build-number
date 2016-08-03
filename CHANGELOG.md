@@ -1,6 +1,11 @@
-## Changelog (Current version: 1.0.3)
+## Changelog (Current version: 1.0.4)
 
 -----------------
+
+### 1.0.4 (2016 Aug 03)
+
+* [fbe06fe] prep for v1.0.4
+* [1ea53fd] added type tag: versioning
 
 ### 1.0.3 (2016 Apr 11)
 
@@ -36,4 +41,4 @@
 
 -----------------
 
-Updated: 2016 Apr 11
+Updated: 2016 Aug 03
