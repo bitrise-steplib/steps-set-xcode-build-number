@@ -1,6 +1,11 @@
-## Changelog (Current version: 1.0.4)
+## Changelog (Current version: 1.0.5)
 
 -----------------
+
+### 1.0.5 (2016 Dec 19)
+
+* [89b6f7e] prepare for 1.0.5
+* [ee7374c] macos project type tag (#9)
 
 ### 1.0.4 (2016 Aug 03)
 
@@ -41,4 +46,4 @@
 
 -----------------
 
-Updated: 2016 Aug 03
+Updated: 2016 Dec 19
