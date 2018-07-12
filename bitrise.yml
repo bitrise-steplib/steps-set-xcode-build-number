@@ -30,6 +30,7 @@ workflows:
         - build_version: "2"
         - build_version_offset: "10"
     - script:
+        title: Checking output
         inputs:
         - content: |
             #!/bin/bash
