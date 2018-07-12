@@ -10,12 +10,14 @@ support_url: https://github.com/bitrise-io/set-xcode-build-number/issues
 host_os_tags:
   - "osx-10.10"
 project_type_tags:
-  - ios
-  - macos
+- ios
+- macos
+- xamarin
+- cordova
+- ionic
+- react-native
 type_tags:
-  - versioning
-  - build
-  - xcode
+- utility
 deps:
   check_only:
   - name: xcode
