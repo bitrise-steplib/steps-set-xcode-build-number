@@ -55,3 +55,7 @@ inputs:
         - Select the your project in Project navigator
         - Under General tab, in Identity section
         - Version field
+outputs:
+  - XCODE_BUNDLE_VERSION:
+    opts:
+      title: "The bundle version used in the Info.plist file"
