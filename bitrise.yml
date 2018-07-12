@@ -29,6 +29,19 @@ workflows:
         - build_short_version_string: "1"
         - build_version: "2"
         - build_version_offset: "10"
+    - script:
+        title: Checking output
+        inputs:
+        - content: |
+            #!/bin/bash
+            set -ex
+
+            if [[ -z "${XCODE_BUNDLE_VERSION}" ]]; then
+              echo "XCODE_BUNDLE_VERSION is not set"
+              exit 1
+            fi
+
+            echo $XCODE_BUNDLE_VERSION
 
   # ----------------------------------------------------------------
   # --- workflow to Release a new version

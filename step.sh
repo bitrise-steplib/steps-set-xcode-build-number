@@ -38,8 +38,12 @@ if [ ! -z "${build_version_offset}" ] ; then
   CONFIG_new_bundle_version=$((${build_version} + ${build_version_offset}))
 
   echo " (i) Build number: ${CONFIG_new_bundle_version}"
+
+  envman add --key "XCODE_BUNDLE_VERSION" --value "${CONFIG_new_bundle_version}"
 else
   echo " (i) Build number: ${CONFIG_new_bundle_version}"
+
+  envman add --key "XCODE_BUNDLE_VERSION" --value "${CONFIG_new_bundle_version}"
 fi
 
 
