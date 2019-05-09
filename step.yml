@@ -26,8 +26,13 @@ inputs:
   - plist_path:
     opts:
       title: "Info.plist file path"
+      summary: Path to the given target's Info.plist file.
       description: |
-        Path to the given project's Info.plist file.
+        **NOTE:**<br/>
+        If your IPA contains multiple build targets ( e.g extensions ), they would need to have the same version number just like your app main target's.<br/>
+        You need to add this step to your workflow for every build target on by one.
+
+        If there are targets with different version numbers in the exported IPA, Apple will reject it.
       is_required: true
   - build_version: "$BITRISE_BUILD_NUMBER"
     opts:
