@@ -54,20 +54,6 @@ workflows:
             echo $XCODE_BUNDLE_VERSION
 
   # ----------------------------------------------------------------
-  # --- workflow to Release a new version
-  create-release:
-    steps:
-    - script:
-        title:
-        inputs:
-        - content: |
-            #!/bin/bash
-            set -e
-
-            export CI=true
-            releaseman create --version $STEP_VERSION
-
-  # ----------------------------------------------------------------
   # --- workflow to Share this step into a Step Library
   audit-this-step:
     steps:
