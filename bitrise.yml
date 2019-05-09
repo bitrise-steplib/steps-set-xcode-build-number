@@ -4,7 +4,10 @@ default_step_lib_source: https://github.com/bitrise-io/bitrise-steplib.git
 app:
   envs:
   # define these in your .bitrise.secrets.yml
-  - MY_PLIST_PATH: $MY_PLIST_PATH
+  - MY_PLIST_PATH: "ios-space-tester/a folder with spaces/BitriseSampleAppsiOS With Spaces/BitriseSampleAppsiOS With Spaces/Info.plist"
+  - SAMPLE_APP_REPOSITORY_URL: https://github.com/bitrise-samples/ios-space-tester
+  - SAMPLE_APP_CLONE_INTO_DIR: "./ios-space-tester"
+  
 
 workflows:
   # ----------------------------------------------------------------
@@ -21,6 +24,14 @@ workflows:
         inputs:
         - path: ./_tmp
         - is_create_path: true
+    - script:
+        title: Clone sample
+        inputs:
+        - content: |
+            #!/bin/bash
+            set -ex
+        
+            git clone $SAMPLE_APP_REPOSITORY_URL $SAMPLE_APP_CLONE_INTO_DIR
     - path::./:
         run_if: true
         inputs:
