@@ -13,7 +13,16 @@ workflows:
   # ----------------------------------------------------------------
   # --- workflow to test this step
   test:
+    before_run:
+    - audit-this-step
     steps:
+    - script:
+        title: Clean tmp dir
+        inputs:
+        - content: |-
+            #!/bin/bash
+            set -ex
+            rm -rf ./_tmp
     - change-workdir:
         title: Switch working dir to test/_tmp dir
         description: |-

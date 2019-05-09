@@ -3,7 +3,6 @@
 Sets the Build Number (bundle version) to the specified value,
 in the target `Info.plist` file for the next build.
 
-
 ## How to use this Step
 
 Can be run directly with the [bitrise CLI](https://github.com/bitrise-io/bitrise),
