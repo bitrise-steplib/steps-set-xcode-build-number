@@ -26,11 +26,11 @@ inputs:
   - plist_path:
     opts:
       title: "Info.plist file path"
-      summary: Path to the given target's Info.plist file.
+      summary: Path to the given target's Info.plist file. You need to use this step for each archivable target of your project.
       description: |
         **NOTE:**<br/>
         If your IPA contains multiple build targets ( e.g extensions ), they would need to have the same version number just like your app main target's.<br/>
-        You need to add this step to your workflow for every build target on by one.
+        You need to add this step to your workflow for every build target one by one.
 
         If there are targets with different version numbers in the exported IPA, Apple will reject it.
       is_required: true
