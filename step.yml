@@ -2,6 +2,11 @@ title: Set Xcode Project Build Number
 summary: |-
   Sets the value of Bundle version in the specified Info.plist file. A great
   way to keep track of version when submitting bug reports.
+
+  If your IPA contains multiple build targets ( e.g watch app, extensions ), they would need to have the same version number as your app's main target has.<br/>
+  You need to add this step to your workflow for every build target one by one.
+
+  If there are targets with different version numbers the app cannot be submitted for App Review or Beta App Review.
 description: |-
   Set the value of Bundle version in the project's Info.plist file to the specified version number.
 website: https://github.com/bitrise-io/set-xcode-build-number
@@ -29,10 +34,10 @@ inputs:
       summary: Path to the given target's Info.plist file. You need to use this step for each archivable target of your project.
       description: |
         **NOTE:**<br/>
-        If your IPA contains multiple build targets ( e.g extensions ), they would need to have the same version number just like your app main target's.<br/>
+        If your IPA contains multiple build targets ( e.g watch app, extensions ), they would need to have the same version number as your app's main target has.<br/>
         You need to add this step to your workflow for every build target one by one.
 
-        If there are targets with different version numbers in the exported IPA, Apple will reject it.
+        If there are targets with different version numbers the app cannot be submitted for App Review or Beta App Review.
       is_required: true
   - build_version: "$BITRISE_BUILD_NUMBER"
     opts:
