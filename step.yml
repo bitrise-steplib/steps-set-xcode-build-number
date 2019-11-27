@@ -1,5 +1,7 @@
 title: Set Xcode Project Build Number
 summary: |-
+  Set the value of Bundle version in the project's Info.plist file to the specified version number.
+description: |-
   Sets the value of Bundle version in the specified Info.plist file. A great
   way to keep track of version when submitting bug reports.
 
@@ -7,8 +9,6 @@ summary: |-
   You need to add this step to your workflow for every build target one by one.
 
   If there are targets with different version numbers the app cannot be submitted for App Review or Beta App Review.
-description: |-
-  Set the value of Bundle version in the project's Info.plist file to the specified version number.
 website: https://github.com/bitrise-io/set-xcode-build-number
 source_code_url: https://github.com/bitrise-io/set-xcode-build-number
 support_url: https://github.com/bitrise-io/set-xcode-build-number/issues
