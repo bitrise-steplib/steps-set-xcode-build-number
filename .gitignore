@@ -1,2 +1,5 @@
+_tmp/
 .bitrise*
-_tmp
+.gows.user.yml
+.idea/
+.DS_Store
