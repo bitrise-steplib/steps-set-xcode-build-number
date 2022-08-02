@@ -40,9 +40,6 @@ project_type_tags:
 - flutter
 type_tags:
 - utility
-deps:
-  check_only:
-  - name: xcode
 run_if: ".IsCI"
 inputs:
   - plist_path:
