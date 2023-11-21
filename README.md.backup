@@ -16,9 +16,7 @@ If there are targets with different version numbers the app cannot be submitted 
 
 ### Configuring the Step 
 
-1. In your Xcode project, set the Generate Info.plist File to No, under PROJECT and TARGETS on the Build Settings tab.
-1. Manually create the `Info.plist` file and check it into source control. Make sure you have all the necessary keys defined in the file.
-1. Configure this step by pointing the **Info.plist file path** input to the `Info.plist` file in the source repo.
+1. Set the file path to the `Info.plist` file in the `Info.plist` file path input.
 1. Add a value in the Build Number input. 
    This sets the CFBundleVersion key to the specified value in the `Info.plist` file. The default value is the `$BITRISE_BUILD_NUMBER` Environment Variable.
 1. Optionally, add a value in the Version Number input. This will set the `CFBundleShortVersionString` key to the specified value in the `Info.plist` file. This input is not required.
@@ -47,7 +45,7 @@ You can also run this step directly with [Bitrise CLI](https://github.com/bitris
 
 | Key | Description | Flags | Default |
 | --- | --- | --- | --- |
-| `plist_path` | Path to the given target's Info.plist file. You need to use this Step for each archivable target of your project.  **NOTE:**<br/> If your IPA contains multiple build targets, they would need to have the same version number as your app's main target has.<br/> You need to add this Step to your Workflow for each build target: if you have, say, three targets, you need to have three instances of this Step in your Workflow. If there are targets with different version numbers the app cannot be submitted for App Review or Beta App Review.  | required |  |
+| `plist_path` | **NOTE:**<br/> If your IPA contains multiple build targets, they would need to have the same version number as your app's main target has.<br/> You need to add this Step to your Workflow for each build target: if you have, say, three targets, you need to have three instances of this Step in your Workflow. If there are targets with different version numbers the app cannot be submitted for App Review or Beta App Review.  | required |  |
 | `build_version` | Set the CFBundleVersion to this value. You can find this in Xcode: - Select your project in the **Project navigator** - Go to the **General** tab and then the **Identity** section - **Build field**  | required | `$BITRISE_BUILD_NUMBER` |
 | `build_version_offset` | This offset will be added to `build_version` input's value.  |  |  |
 | `build_short_version_string` | Set the CFBundleShortVersionString to this value. You can find this in Xcode: - Select your project in the **Project navigator** - Go to the **General** tab and then the **Identity** section - **Version field**  |  |  |
@@ -58,7 +56,7 @@ You can also run this step directly with [Bitrise CLI](https://github.com/bitris
 
 | Environment Variable | Description |
 | --- | --- |
-| `XCODE_BUNDLE_VERSION` | The bundle version used in the Info.plist file |
+| `XCODE_BUNDLE_VERSION` | hello |
 </details>
 
 ## 🙋 Contributing

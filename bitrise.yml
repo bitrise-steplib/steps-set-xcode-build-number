@@ -1,4 +1,4 @@
-format_version: 7
+format_version: "12"
 default_step_lib_source: https://github.com/bitrise-io/bitrise-steplib.git
 
 app:
@@ -29,7 +29,6 @@ workflows:
           To prevent step testing issues, like referencing relative
           files with just './some-file', which would work for local tests
           but not if the step is included in another bitrise.yml!
-        run_if: true
         inputs:
         - path: ./_tmp
         - is_create_path: true
@@ -42,7 +41,6 @@ workflows:
         
             git clone $SAMPLE_APP_REPOSITORY_URL $SAMPLE_APP_CLONE_INTO_DIR
     - path::./:
-        run_if: true
         inputs:
         - plist_path: ${MY_PLIST_PATH}
         - build_short_version_string: "1"
@@ -61,6 +59,11 @@ workflows:
             fi
 
             echo $XCODE_BUNDLE_VERSION
+
+  generate-readme:
+    steps:
+    - git::https://github.com/bitrise-steplib/steps-readme-generator.git@main: { }
+
 
   # ----------------------------------------------------------------
   # --- workflow to Share this step into a Step Library
