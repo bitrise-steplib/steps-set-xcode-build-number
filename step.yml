@@ -11,7 +11,9 @@ description: |-
   
   ### Configuring the Step 
   
-  1. Set the file path to the `Info.plist` file in the `Info.plist` file path input.
+  1. In your Xcode project, set the Generate Info.plist File to No, under PROJECT and TARGETS on the Build Settings tab.
+  1. Manually create the `Info.plist` file and check it into source control. Make sure you have all the necessary keys defined in the file.
+  1. Configure this step by pointing the **Info.plist file path** input to the `Info.plist` file in the source repo.
   1. Add a value in the Build Number input. 
      This sets the CFBundleVersion key to the specified value in the `Info.plist` file. The default value is the `$BITRISE_BUILD_NUMBER` Environment Variable.
   1. Optionally, add a value in the Version Number input. This will set the `CFBundleShortVersionString` key to the specified value in the `Info.plist` file. This input is not required.
@@ -47,6 +49,8 @@ inputs:
       title: "Info.plist file path"
       summary: Path to the given target's Info.plist file. You need to use this Step for each archivable target of your project.
       description: |
+        Path to the given target's Info.plist file. You need to use this Step for each archivable target of your project.
+
         **NOTE:**<br/>
         If your IPA contains multiple build targets, they would need to have the same version number as your app's main target has.<br/>
         You need to add this Step to your Workflow for each build target: if you have, say, three targets, you need to have three instances of this Step in your Workflow.
@@ -79,4 +83,5 @@ inputs:
 outputs:
   - XCODE_BUNDLE_VERSION:
     opts:
-      title: "The bundle version used in the Info.plist file"
+      title: Xcode Bundle Version
+      description: The bundle version used in the Info.plist file
