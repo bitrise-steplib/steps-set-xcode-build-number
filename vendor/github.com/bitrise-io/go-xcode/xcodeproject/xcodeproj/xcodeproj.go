@@ -193,24 +193,6 @@ func (p XcodeProj) ForceTargetBundleID(target, configuration, bundleID string) e
 	return p.Save()
 }
 
-func (p XcodeProj) UpdateBuildSetting(target, configuration, key string, value interface{}) error {
-	t, targetFound := p.Proj.TargetByName(target)
-	if !targetFound {
-		return fmt.Errorf("could not find target (%s)", target)
-	}
-
-	buildConfigurations := t.BuildConfigurationList.BuildConfigurations
-	for _, c := range buildConfigurations {
-		if configuration != "" && c.Name != configuration {
-			 continue
-		}
-
-		c.BuildSettings[key] = value
-	}
-
-	return p.Save()
-}
-
 // TargetBundleID ...
 func (p XcodeProj) TargetBundleID(target, configuration string) (string, error) {
 	buildSettings, err := p.TargetBuildSettings(target, configuration)

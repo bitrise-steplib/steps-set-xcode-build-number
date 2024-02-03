@@ -2,60 +2,50 @@ package main
 
 import (
 	"os"
-	"path/filepath"
 
-	"github.com/bitrise-io/go-xcode/xcodeproject/xcodeproj"
+	"github.com/bitrise-io/go-steputils/v2/export"
+	"github.com/bitrise-io/go-steputils/v2/stepconf"
+	"github.com/bitrise-io/go-steputils/v2/stepenv"
+	"github.com/bitrise-io/go-utils/v2/command"
+	"github.com/bitrise-io/go-utils/v2/env"
+	. "github.com/bitrise-io/go-utils/v2/exitcode"
+	"github.com/bitrise-io/go-utils/v2/log"
+	"github.com/bitrise-steplib/steps-set-xcode-build-number/step"
 )
 
 func main() {
-	bundleVersion := 11
-	shortVersion := "9.0"
-	projectPath := "/Users/szabi/Dev/misc/TestAPP2/TestAPP2.xcodeproj"
-	//projectPath := "/Users/szabi/Dev/bitrise-io/sample-apps-ios-simple-objc/ios-simple-objc/ios-simple-objc.xcodeproj"
-
-	project, err := xcodeproj.Open(projectPath)
-	if err != nil {
-		os.Exit(1)
-	}
-
-	if generatesInfoPlist(project) {
-		updateVersionNumbersInProject(project, bundleVersion, shortVersion)
-	} else {
-		updateVersionNumbersInInfoPlist(project, projectPath, bundleVersion, shortVersion)
-	}
-
-	os.Exit(0)
+	exitCode := run()
+	os.Exit(int(exitCode))
 }
 
-func generatesInfoPlist(project xcodeproj.XcodeProj) bool {
-	buildSettings, _ := project.TargetBuildSettings("TestAPP2", "Debug")
-	generatesInfoPlist, _ := buildSettings.String("GENERATE_INFOPLIST_FILE")
+func run() ExitCode {
+	logger := log.NewLogger()
 
-	return generatesInfoPlist == "YES"
-}
-
-func updateVersionNumbersInProject(project xcodeproj.XcodeProj, bundleVersion int, shortVersion string) {
-	err := project.UpdateBuildSetting("TestAPP2", "", "CURRENT_PROJECT_VERSION", bundleVersion)
+	updater := createUpdater(logger)
+	config, err := updater.ProcessConfig()
 	if err != nil {
-		os.Exit(2)
+		logger.Errorf("Process config: %s", err)
+		return Failure
 	}
 
-	err = project.UpdateBuildSetting("TestAPP2", "", "MARKETING_VERSION", shortVersion)
+	result, err := updater.Run(config)
 	if err != nil {
-		os.Exit(3)
+		logger.Errorf("Run: %s", err)
+		return Failure
 	}
+
+	if err := updater.Export(result); err != nil {
+		logger.Errorf("Export outputs: %s", err)
+		return Failure
+	}
+
+	return Success
 }
 
-func updateVersionNumbersInInfoPlist(project xcodeproj.XcodeProj, projectPath string, bundleVersion int, shortVersion string) {
-	buildSettings, _ := project.TargetBuildSettings("ios-simple-objc", "Debug")
-	infoPlistPath, _ := buildSettings.String("INFOPLIST_FILE")
+func createUpdater(logger log.Logger) step.Updater {
+	envRepository := stepenv.NewRepository(env.NewRepository())
+	inputParser := stepconf.NewInputParser(envRepository)
+	exporter := export.NewExporter(command.NewFactory(envRepository))
 
-	absoluteInfoPlistPath := filepath.Join(filepath.Dir(projectPath), infoPlistPath)
-
-	infoPlist, format, _ := xcodeproj.ReadPlistFile(absoluteInfoPlistPath)
-
-	infoPlist["CFBundleVersion"] = bundleVersion
-	infoPlist["CFBundleShortVersionString"] = shortVersion
-
-	_ = xcodeproj.WritePlistFile(absoluteInfoPlistPath, infoPlist, format)
+	return step.NewUpdater(inputParser, exporter, logger)
 }
