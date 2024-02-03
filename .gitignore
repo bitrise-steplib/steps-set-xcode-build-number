@@ -3,3 +3,5 @@ _tmp/
 .gows.user.yml
 .idea/
 .DS_Store
+xcuserdata/
+build/
