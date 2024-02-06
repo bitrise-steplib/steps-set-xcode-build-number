@@ -112,7 +112,10 @@ func updateVersionNumbersInProject(helper *projectmanager.ProjectHelper, targetN
 			}
 
 			buildConfig.BuildSettings["CURRENT_PROJECT_VERSION"] = bundleVersion
-			buildConfig.BuildSettings["MARKETING_VERSION"] = shortVersion
+
+			if shortVersion != "" {
+				buildConfig.BuildSettings["MARKETING_VERSION"] = shortVersion
+			}
 		}
 	}
 
@@ -139,7 +142,10 @@ func updateVersionNumbersInInfoPlist(helper *projectmanager.ProjectHelper, targe
 
 	infoPlist, format, _ := xcodeproj.ReadPlistFile(absoluteInfoPlistPath)
 	infoPlist["CFBundleVersion"] = bundleVersion
-	infoPlist["CFBundleShortVersionString"] = shortVersion
+
+	if shortVersion != "" {
+		infoPlist["CFBundleShortVersionString"] = shortVersion
+	}
 
 	err = xcodeproj.WritePlistFile(absoluteInfoPlistPath, infoPlist, format)
 	if err != nil {
