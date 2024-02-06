@@ -102,13 +102,15 @@ inputs:
     opts:
       title: Build Number Offset
       description: |-
-        This offset will be added to `build_version` input's value.
+        This offset will be added to `build_version` input's value. It must be a positive number.
 
   - build_short_version_string:
     opts:
       title: Version Number
       description: |-
         This will be either the CFBundleShortVersionString in the Info.plist file or the MARKETING_VERSION in the project file.
+        
+        If it is empty then the step will not modify the existing value.
 
 outputs:
   - XCODE_BUNDLE_VERSION:

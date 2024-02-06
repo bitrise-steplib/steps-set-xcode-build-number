@@ -33,6 +33,10 @@ func (u Updater) ProcessConfig() (Config, error) {
 		return Config{}, err
 	}
 
+	if input.BuildVersionOffset < 0 {
+		return Config{}, fmt.Errorf("build version offset cannot be a negative value (%d)", input.BuildVersionOffset)
+	}
+
 	stepconf.Print(input)
 	u.logger.Println()
 
