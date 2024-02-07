@@ -1,69 +1,109 @@
-format_version: "12"
+format_version: "13"
 default_step_lib_source: https://github.com/bitrise-io/bitrise-steplib.git
 
 app:
   envs:
-  # define these in your .bitrise.secrets.yml
-  - MY_PLIST_PATH: "ios-space-tester/a folder with spaces/BitriseSampleAppsiOS With Spaces/BitriseSampleAppsiOS With Spaces/Info.plist"
-  - SAMPLE_APP_REPOSITORY_URL: https://github.com/bitrise-samples/ios-space-tester
-  - SAMPLE_APP_CLONE_INTO_DIR: "./ios-space-tester"
-  
+  - PROJECT_ROOT: ./testdata/project/Example
+  - PROJECT_FILE: Example.xcodeproj
+  - WORKSPACE_ROOT: ./testdata/workspace/Example
+  - WORKSPACE_FILE: Example.xcworkspace
+  - GENERATED_NAME: Example
+  - STATIC_NAME: Example-Static
 
 workflows:
-  # ----------------------------------------------------------------
-  # --- workflow to test this step
   test:
-    before_run:
-    - audit-this-step
+    after_run:
+    - test-workspace-with-generated-plist
+    - test-workspace-with-static-plist
+    - test-project-with-generated-plist
+    - test-project-with-generated-plist
+
+  test-workspace-with-generated-plist:
+    envs:
+    - STEP_PATH: "$WORKSPACE_ROOT/$WORKSPACE_FILE"
+    - STEP_NAME: $GENERATED_NAME
+    - STEP_TYPE: workspace
+    - STEP_BUILD_ROOT: $WORKSPACE_ROOT
+    after_run:
+    - _set-build-and-assert
+
+  test-workspace-with-static-plist:
+    envs:
+    - STEP_PATH: "$WORKSPACE_ROOT/$WORKSPACE_FILE"
+    - STEP_NAME: $STATIC_NAME
+    - STEP_TYPE: workspace
+    - STEP_BUILD_ROOT: $WORKSPACE_ROOT
+    after_run:
+    - _set-build-and-assert
+
+  test-project-with-generated-plist:
+    envs:
+    - STEP_PATH: "$PROJECT_ROOT/$PROJECT_FILE"
+    - STEP_NAME: $GENERATED_NAME
+    - STEP_TYPE: project
+    - STEP_BUILD_ROOT: $PROJECT_ROOT
+    after_run:
+    - _set-build-and-assert
+
+  test-project-with-static-plist:
+    envs:
+    - STEP_PATH: "$PROJECT_ROOT/$PROJECT_FILE"
+    - STEP_NAME: $STATIC_NAME
+    - STEP_TYPE: project
+    - STEP_BUILD_ROOT: $PROJECT_ROOT
+    after_run:
+    - _set-build-and-assert
+
+  _set-build-and-assert:
     steps:
     - script:
-        title: Clean tmp dir
-        inputs:
-        - content: |-
-            #!/bin/bash
-            set -ex
-            rm -rf ./_tmp
-    - change-workdir:
-        title: Switch working dir to test/_tmp dir
-        description: |-
-          To prevent step testing issues, like referencing relative
-          files with just './some-file', which would work for local tests
-          but not if the step is included in another bitrise.yml!
-        inputs:
-        - path: ./_tmp
-        - is_create_path: true
-    - script:
-        title: Clone sample
+        title: Remove build dir
         inputs:
         - content: |
             #!/bin/bash
             set -ex
-        
-            git clone $SAMPLE_APP_REPOSITORY_URL $SAMPLE_APP_CLONE_INTO_DIR
+            
+            rm -rf $STEP_BUILD_ROOT/build
     - path::./:
+        run_if: "true"
         inputs:
-        - plist_path: ${MY_PLIST_PATH}
-        - build_short_version_string: "1"
-        - build_version: "2"
-        - build_version_offset: "10"
+        - project_path: $STEP_PATH
+        - scheme: $STEP_NAME
+        - target: $STEP_NAME
+        - build_version: 9994
+        - build_version_offset: 5
+        - build_short_version_string: 9.99.9
     - script:
-        title: Checking output
+        title: Build app
         inputs:
         - content: |
             #!/bin/bash
             set -ex
-
-            if [[ -z "${XCODE_BUNDLE_VERSION}" ]]; then
-              echo "XCODE_BUNDLE_VERSION is not set"
+                
+            xcodebuild -$STEP_TYPE $STEP_PATH -scheme $STEP_NAME -sdk iphonesimulator -configuration Release SYMROOT=./build
+    - script:
+        title: Check version and build numbers
+        inputs:
+        - content: |
+            #!/bin/bash
+            set -ex
+              
+            buildVersion=$(/usr/libexec/PlistBuddy "$STEP_BUILD_ROOT/build/Release-iphonesimulator/$STEP_NAME.app/Info.plist" -c "print CFBundleVersion")
+            buildShortVersion=$(/usr/libexec/PlistBuddy "$STEP_BUILD_ROOT/build/Release-iphonesimulator/$STEP_NAME.app/Info.plist" -c "print CFBundleShortVersionString")
+              
+            if [ "$buildVersion" != "9999" ]; then
+              echo "CFBundleVersion is wrong"
               exit 1
             fi
-
-            echo $XCODE_BUNDLE_VERSION
+              
+            if [ "$buildShortVersion" != "9.99.9" ]; then
+              echo "CFBundleShortVersionString is wrong"
+              exit 1
+            fi
 
   generate-readme:
     steps:
     - git::https://github.com/bitrise-steplib/steps-readme-generator.git@main: { }
-
 
   # ----------------------------------------------------------------
   # --- workflow to Share this step into a Step Library

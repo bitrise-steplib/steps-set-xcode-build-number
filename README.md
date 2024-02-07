@@ -2,13 +2,13 @@
 
 [![Step changelog](https://shields.io/github/v/release/bitrise-io/set-xcode-build-number?include_prereleases&label=changelog&color=blueviolet)](https://github.com/bitrise-io/set-xcode-build-number/releases)
 
-Set the value of your iOS app's bundle version in the `Info.plist` file to the specified version number.
+Set the value of your iOS app's bundle version to the specified version number.
 
 <details>
 <summary>Description</summary>
 
-Set the value of your iOS app's bundle version in the `Info.plist` file to the specified version number. A great
-way to keep track of versions when submitting bug reports.
+Set the value of your iOS app's bundle version to the specified version number. A great way to keep track of versions 
+when submitting bug reports.
 
 If your IPA contains multiple build targets, they need to have the same version number as your app's main target has.
 In that case, you need to add this Step to your Workflow for each build target: if you have, say, three targets, you need to have three instances of this Step in your Workflow.
@@ -16,16 +16,20 @@ If there are targets with different version numbers the app cannot be submitted 
 
 ### Configuring the Step 
 
-1. In your Xcode project, set the Generate Info.plist File to No, under PROJECT and TARGETS on the Build Settings tab.
-1. Manually create the `Info.plist` file and check it into source control. Make sure you have all the necessary keys defined in the file.
-1. Configure this step by pointing the **Info.plist file path** input to the `Info.plist` file in the source repo.
-1. Add a value in the Build Number input. 
-   This sets the CFBundleVersion key to the specified value in the `Info.plist` file. The default value is the `$BITRISE_BUILD_NUMBER` Environment Variable.
-1. Optionally, add a value in the Version Number input. This will set the `CFBundleShortVersionString` key to the specified value in the `Info.plist` file. This input is not required.
+The step can handle if versions numbers are specified in the project file (default configuration since Xcode 13) and the old style
+where the version numbers appear in the **Info.plist** file. It can automatically detect which style is used and act accordingly.
+
+For the simple projects you do not need to do anything because the step uses the previously defined $BITRISE_PROJECT_PATH
+and $BITRISE_SCHEME env vars to detect the target settings.
+
+For better customisation the step can be also instructed to look for a specific target and even for specific target configurations
+to update the version numbers.
 
 ### Useful links 
 
 - [Build numbering and app versioning](https://devcenter.bitrise.io/builds/build-numbering-and-app-versioning/#setting-the-cfbundleversion-and-cfbundleshortversionstring-of-an-ios-app)
+- [Current Project Version in Apple documentation](https://developer.apple.com/documentation/xcode/build-settings-reference#Current-Project-Version)
+- [Marketing Version in Apple documentation](https://developer.apple.com/documentation/xcode/build-settings-reference#Marketing-Version)
 - [CFBundleversion in Apple documentation](https://developer.apple.com/documentation/bundleresources/information_property_list/cfbundleversion)
 
 ### Related Steps 
@@ -47,10 +51,13 @@ You can also run this step directly with [Bitrise CLI](https://github.com/bitris
 
 | Key | Description | Flags | Default |
 | --- | --- | --- | --- |
-| `plist_path` | Path to the given target's Info.plist file. You need to use this Step for each archivable target of your project.  **NOTE:**<br/> If your IPA contains multiple build targets, they would need to have the same version number as your app's main target has.<br/> You need to add this Step to your Workflow for each build target: if you have, say, three targets, you need to have three instances of this Step in your Workflow. If there are targets with different version numbers the app cannot be submitted for App Review or Beta App Review.  | required |  |
-| `build_version` | Set the CFBundleVersion to this value. You can find this in Xcode: - Select your project in the **Project navigator** - Go to the **General** tab and then the **Identity** section - **Build field**  | required | `$BITRISE_BUILD_NUMBER` |
-| `build_version_offset` | This offset will be added to `build_version` input's value.  |  |  |
-| `build_short_version_string` | Set the CFBundleShortVersionString to this value. You can find this in Xcode: - Select your project in the **Project navigator** - Go to the **General** tab and then the **Identity** section - **Version field**  |  |  |
+| `project_path` | Xcode Project (`.xcodeproj`) or Workspace (`.xcworkspace`) path. | required | `$BITRISE_PROJECT_PATH` |
+| `scheme` | Xcode Scheme name. | required | `$BITRISE_SCHEME` |
+| `target` | Xcode Target name.  It is optional and if specified then the step will find the given target and update the version numbers for it.   If it is left empty then the step will use the scheme's default target to update the version numbers. |  |  |
+| `configuration` | Xcode Configuration name.  It is optional and if specified then the step will only update the configuration with the given name.   If it is left empty then the step will update all of the target's configurations with the build and version number. |  |  |
+| `build_version` | This will be either the CFBundleVersion in the Info.plist file or the CURRENT_PROJECT_VERSION in the project file. | required | `$BITRISE_BUILD_NUMBER` |
+| `build_version_offset` | This offset will be added to `build_version` input's value. |  |  |
+| `build_short_version_string` | This will be either the CFBundleShortVersionString in the Info.plist file or the MARKETING_VERSION in the project file. |  |  |
 </details>
 
 <details>
@@ -58,7 +65,7 @@ You can also run this step directly with [Bitrise CLI](https://github.com/bitris
 
 | Environment Variable | Description |
 | --- | --- |
-| `XCODE_BUNDLE_VERSION` | The bundle version used in the Info.plist file |
+| `XCODE_BUNDLE_VERSION` | The bundle version used in either in Info.plist or project file |
 </details>
 
 ## 🙋 Contributing
