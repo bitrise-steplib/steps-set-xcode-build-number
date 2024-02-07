@@ -40,15 +40,8 @@ func (u Updater) ProcessConfig() (Config, error) {
 	stepconf.Print(input)
 	u.logger.Println()
 
-	return Config{
-		ProjectPath:             input.ProjectPath,
-		Scheme:                  input.Scheme,
-		Target:                  input.Target,
-		Configuration:           input.Configuration,
-		BuildVersion:            input.BuildVersion,
-		BuildVersionOffset:      input.BuildVersionOffset,
-		BuildShortVersionString: input.BuildShortVersionString,
-	}, nil
+	// golangci told me that I should do this instead of creating a Config struct.
+	return Config(input), nil
 }
 
 func (u Updater) Run(config Config) (Result, error) {
