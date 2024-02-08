@@ -2,12 +2,12 @@
 
 [![Step changelog](https://shields.io/github/v/release/bitrise-io/set-xcode-build-number?include_prereleases&label=changelog&color=blueviolet)](https://github.com/bitrise-io/set-xcode-build-number/releases)
 
-Set the value of your iOS app's bundle version to the specified version number.
+Set the value of your iOS app's build number to the specified version number.
 
 <details>
 <summary>Description</summary>
 
-Set the value of your iOS app's bundle version to the specified version number. A great way to keep track of versions 
+Set the value of your iOS app's build number to the specified version number. A great way to keep track of versions 
 when submitting bug reports.
 
 If your IPA contains multiple build targets, they need to have the same version number as your app's main target has.
@@ -56,8 +56,8 @@ You can also run this step directly with [Bitrise CLI](https://github.com/bitris
 | `target` | Xcode Target name.  It is optional and if specified then the step will find the given target and update the version numbers for it.   If it is left empty then the step will use the scheme's default target to update the version numbers. |  |  |
 | `configuration` | Xcode Configuration name.  It is optional and if specified then the step will only update the configuration with the given name.   If it is left empty then the step will update all of the target's configurations with the build and version number. |  |  |
 | `build_version` | This will be either the CFBundleVersion in the Info.plist file or the CURRENT_PROJECT_VERSION in the project file. | required | `$BITRISE_BUILD_NUMBER` |
-| `build_version_offset` | This offset will be added to `build_version` input's value. |  |  |
-| `build_short_version_string` | This will be either the CFBundleShortVersionString in the Info.plist file or the MARKETING_VERSION in the project file. |  |  |
+| `build_version_offset` | This offset will be added to `build_version` input's value. It must be a positive number. |  |  |
+| `build_short_version_string` | This will be either the CFBundleShortVersionString in the Info.plist file or the MARKETING_VERSION in the project file.  If it is empty then the step will not modify the existing value. |  |  |
 </details>
 
 <details>

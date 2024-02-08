@@ -1,0 +1,95 @@
+format_version: "13"
+default_step_lib_source: https://github.com/bitrise-io/bitrise-steplib.git
+
+app:
+  envs:
+  - PROJECT_ROOT: ./testdata/project/Example
+  - PROJECT_FILE: Example.xcodeproj
+  - WORKSPACE_ROOT: ./testdata/workspace/Example
+  - WORKSPACE_FILE: Example.xcworkspace
+  - GENERATED_NAME: Example
+  - STATIC_NAME: Example-Static
+
+workflows:
+  test-workspace-with-generated-plist:
+    envs:
+    - STEP_PATH: $WORKSPACE_ROOT/$WORKSPACE_FILE
+    - STEP_NAME: $GENERATED_NAME
+    - STEP_TYPE: workspace
+    - STEP_BUILD_ROOT: $WORKSPACE_ROOT
+    after_run:
+    - _set-build-and-assert
+
+  test-workspace-with-static-plist:
+    envs:
+    - STEP_PATH: $WORKSPACE_ROOT/$WORKSPACE_FILE
+    - STEP_NAME: $STATIC_NAME
+    - STEP_TYPE: workspace
+    - STEP_BUILD_ROOT: $WORKSPACE_ROOT
+    after_run:
+    - _set-build-and-assert
+
+  test-project-with-generated-plist:
+    envs:
+    - STEP_PATH: $PROJECT_ROOT/$PROJECT_FILE
+    - STEP_NAME: $GENERATED_NAME
+    - STEP_TYPE: project
+    - STEP_BUILD_ROOT: $PROJECT_ROOT
+    after_run:
+    - _set-build-and-assert
+
+  test-project-with-static-plist:
+    envs:
+    - STEP_PATH: $PROJECT_ROOT/$PROJECT_FILE
+    - STEP_NAME: $STATIC_NAME
+    - STEP_TYPE: project
+    - STEP_BUILD_ROOT: $PROJECT_ROOT
+    after_run:
+    - _set-build-and-assert
+
+  _set-build-and-assert:
+    steps:
+    - script:
+        title: Remove build dir
+        inputs:
+        - content: |
+            #!/bin/bash
+            set -ex
+
+            rm -rf $STEP_BUILD_ROOT/build
+    - path::./:
+        run_if: "true"
+        inputs:
+        - project_path: $STEP_PATH
+        - scheme: $STEP_NAME
+        - target: $STEP_NAME
+        - build_version: 9994
+        - build_version_offset: 5
+        - build_short_version_string: 9.99.9
+    - script:
+        title: Build app
+        inputs:
+        - content: |
+            #!/bin/bash
+            set -ex
+
+            xcodebuild -$STEP_TYPE $STEP_PATH -scheme $STEP_NAME -sdk iphonesimulator -configuration Release SYMROOT=./build
+    - script:
+        title: Check version and build numbers
+        inputs:
+        - content: |
+            #!/bin/bash
+            set -ex
+
+            buildVersion=$(/usr/libexec/PlistBuddy "$STEP_BUILD_ROOT/build/Release-iphonesimulator/$STEP_NAME.app/Info.plist" -c "print CFBundleVersion")
+            buildShortVersion=$(/usr/libexec/PlistBuddy "$STEP_BUILD_ROOT/build/Release-iphonesimulator/$STEP_NAME.app/Info.plist" -c "print CFBundleShortVersionString")
+
+            if [ "$buildVersion" != "9999" ]; then
+              echo "CFBundleVersion is wrong"
+              exit 1
+            fi
+
+            if [ "$buildShortVersion" != "9.99.9" ]; then
+              echo "CFBundleShortVersionString is wrong"
+              exit 1
+            fi
