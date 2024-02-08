@@ -31,9 +31,9 @@ description: |-
 
   - [Xcode Archive & Export for iOS](https://www.bitrise.io/integrations/steps/xcode-archive)
   - [Set Android Manifest Version Code and Name](https://www.bitrise.io/integrations/steps/set-android-manifest-versions)
-website: https://github.com/bitrise-io/set-xcode-build-number
-source_code_url: https://github.com/bitrise-io/set-xcode-build-number
-support_url: https://github.com/bitrise-io/set-xcode-build-number/issues
+website: https://github.com/bitrise-steplib/steps-set-xcode-build-number
+source_code_url: https://github.com/bitrise-steplib/steps-set-xcode-build-number
+support_url: https://github.com/bitrise-steplib/steps-set-xcode-build-number/issues
 
 type_tags:
 - utility
