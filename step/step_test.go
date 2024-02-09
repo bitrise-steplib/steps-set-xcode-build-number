@@ -17,7 +17,7 @@ func TestExport(t *testing.T) {
 	result := Result{BuildVersion: 999}
 
 	mockFactory := mocks.NewFactory(t)
-	arguments := []string{"add", "--key", "XCODE_BUNDLE_VERSION", "--value", strconv.Itoa(result.BuildVersion)}
+	arguments := []string{"add", "--key", "XCODE_BUNDLE_VERSION", "--value", strconv.FormatInt(result.BuildVersion, 10)}
 	mockFactory.On("Create", "envman", arguments, (*command.Opts)(nil)).Return(testCommand())
 
 	inputParser := stepconf.NewInputParser(env.NewRepository())
