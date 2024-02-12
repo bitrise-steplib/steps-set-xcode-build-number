@@ -138,7 +138,7 @@ func updateVersionNumbersInInfoPlist(helper *projectmanager.ProjectHelper, targe
 	absoluteInfoPlistPath := filepath.Join(filepath.Dir(helper.XcProj.Path), infoPlistPath)
 
 	infoPlist, format, _ := xcodeproj.ReadPlistFile(absoluteInfoPlistPath)
-	infoPlist["CFBundleVersion"] = bundleVersion
+	infoPlist["CFBundleVersion"] = strconv.Itoa(bundleVersion)
 
 	if shortVersion != "" {
 		infoPlist["CFBundleShortVersionString"] = shortVersion
