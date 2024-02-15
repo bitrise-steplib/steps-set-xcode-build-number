@@ -3,7 +3,7 @@ module github.com/bitrise-steplib/steps-set-xcode-build-number
 go 1.17
 
 require (
-	github.com/bitrise-io/go-steputils/v2 v2.0.0-alpha.25
+	github.com/bitrise-io/go-steputils/v2 v2.0.0-alpha.26
 	github.com/bitrise-io/go-utils/v2 v2.0.0-alpha.20
 	github.com/bitrise-io/go-xcode v1.0.9
 	github.com/bitrise-io/go-xcode/v2 v2.0.0-alpha.26
