@@ -11,7 +11,7 @@ app:
   - STATIC_NAME: Example-Static
 
 workflows:
-  test-workspace-with-generated-plist:
+  test_workspace-with-generated-plist:
     envs:
     - STEP_PATH: $WORKSPACE_ROOT/$WORKSPACE_FILE
     - STEP_NAME: $GENERATED_NAME
@@ -20,7 +20,7 @@ workflows:
     after_run:
     - _set-build-and-assert
 
-  test-workspace-with-static-plist:
+  test_workspace-with-static-plist:
     envs:
     - STEP_PATH: $WORKSPACE_ROOT/$WORKSPACE_FILE
     - STEP_NAME: $STATIC_NAME
@@ -29,7 +29,7 @@ workflows:
     after_run:
     - _set-build-and-assert
 
-  test-project-with-generated-plist:
+  test_project-with-generated-plist:
     envs:
     - STEP_PATH: $PROJECT_ROOT/$PROJECT_FILE
     - STEP_NAME: $GENERATED_NAME
@@ -38,7 +38,7 @@ workflows:
     after_run:
     - _set-build-and-assert
 
-  test-project-with-static-plist:
+  test_project-with-static-plist:
     envs:
     - STEP_PATH: $PROJECT_ROOT/$PROJECT_FILE
     - STEP_NAME: $STATIC_NAME
