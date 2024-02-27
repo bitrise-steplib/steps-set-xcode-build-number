@@ -79,7 +79,7 @@ func (u Updater) Run(config Config) (Result, error) {
 }
 
 func (u Updater) Export(result Result) error {
-	return u.exporter.ExportOutput("XCODE_BUNDLE_VERSION", strconv.Itoa(result.BuildVersion))
+	return u.exporter.ExportOutput("XCODE_BUNDLE_VERSION", strconv.FormatInt(result.BuildVersion, 10))
 }
 
 func generatesInfoPlist(helper *projectmanager.ProjectHelper, targetName, configuration string) (bool, error) {
@@ -93,7 +93,7 @@ func generatesInfoPlist(helper *projectmanager.ProjectHelper, targetName, config
 	return generatesInfoPlist, err
 }
 
-func updateVersionNumbersInProject(helper *projectmanager.ProjectHelper, targetName, configuration string, bundleVersion int, shortVersion string) error {
+func updateVersionNumbersInProject(helper *projectmanager.ProjectHelper, targetName, configuration string, bundleVersion int64, shortVersion string) error {
 	if targetName == "" {
 		targetName = helper.MainTarget.Name
 	}
@@ -124,7 +124,7 @@ func updateVersionNumbersInProject(helper *projectmanager.ProjectHelper, targetN
 	return nil
 }
 
-func updateVersionNumbersInInfoPlist(helper *projectmanager.ProjectHelper, targetName, configuration string, bundleVersion int, shortVersion string) error {
+func updateVersionNumbersInInfoPlist(helper *projectmanager.ProjectHelper, targetName, configuration string, bundleVersion int64, shortVersion string) error {
 	buildConfig, err := buildConfiguration(helper, targetName, configuration)
 	if err != nil {
 		return err
@@ -138,7 +138,7 @@ func updateVersionNumbersInInfoPlist(helper *projectmanager.ProjectHelper, targe
 	absoluteInfoPlistPath := filepath.Join(filepath.Dir(helper.XcProj.Path), infoPlistPath)
 
 	infoPlist, format, _ := xcodeproj.ReadPlistFile(absoluteInfoPlistPath)
-	infoPlist["CFBundleVersion"] = strconv.Itoa(bundleVersion)
+	infoPlist["CFBundleVersion"] = strconv.FormatInt(bundleVersion, 10)
 
 	if shortVersion != "" {
 		infoPlist["CFBundleShortVersionString"] = shortVersion
