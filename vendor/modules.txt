@@ -1,3 +1,7 @@
+# github.com/bitrise-io/go-pkcs12 v0.0.0-20230815095624-feb898696e02
+## explicit; go 1.19
+github.com/bitrise-io/go-pkcs12
+github.com/bitrise-io/go-pkcs12/internal/rc2
 # github.com/bitrise-io/go-plist v0.0.0-20210301100253-4b1a112ccd10
 ## explicit; go 1.15
 github.com/bitrise-io/go-plist
@@ -27,8 +31,8 @@ github.com/bitrise-io/go-utils/v2/exitcode
 github.com/bitrise-io/go-utils/v2/log
 github.com/bitrise-io/go-utils/v2/log/colorstring
 github.com/bitrise-io/go-utils/v2/pathutil
-# github.com/bitrise-io/go-xcode v1.0.9
-## explicit; go 1.15
+# github.com/bitrise-io/go-xcode v1.0.19
+## explicit; go 1.20
 github.com/bitrise-io/go-xcode/certificateutil
 github.com/bitrise-io/go-xcode/devportalservice
 github.com/bitrise-io/go-xcode/exportoptions
@@ -46,10 +50,6 @@ github.com/bitrise-io/go-xcode/v2/autocodesign
 github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/appstoreconnect
 github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/time
 github.com/bitrise-io/go-xcode/v2/autocodesign/projectmanager
-# github.com/bitrise-io/pkcs12 v0.0.0-20211108084543-e52728e011c8
-## explicit
-github.com/bitrise-io/pkcs12
-github.com/bitrise-io/pkcs12/internal/rc2
 # github.com/davecgh/go-spew v1.1.1
 ## explicit
 github.com/davecgh/go-spew/spew
@@ -81,6 +81,9 @@ github.com/stretchr/objx
 ## explicit; go 1.20
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/mock
+# golang.org/x/crypto v0.12.0
+## explicit; go 1.17
+golang.org/x/crypto/pbkdf2
 # golang.org/x/text v0.12.0
 ## explicit; go 1.17
 golang.org/x/text/transform
