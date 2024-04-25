@@ -77,7 +77,7 @@ func (u Updater) Run(config Config) (Result, error) {
 	} else {
 		u.logger.Printf("The version numbers are stored in the plist file.")
 
-		err := updateVersionNumbersInInfoPlist(helper, config.Scheme, config.Target, config.Configuration, buildVersion, config.BuildShortVersionString)
+		err := u.updateVersionNumbersInInfoPlist(helper, config.Scheme, config.Target, config.Configuration, buildVersion, config.BuildShortVersionString)
 		if err != nil {
 			return Result{}, err
 		}
@@ -134,7 +134,7 @@ func updateVersionNumbersInProject(helper *projectmanager.ProjectHelper, targetN
 	return nil
 }
 
-func updateVersionNumbersInInfoPlist(helper *projectmanager.ProjectHelper, schemeName, targetName, configuration string, bundleVersion int64, shortVersion string) error {
+func (u Updater) updateVersionNumbersInInfoPlist(helper *projectmanager.ProjectHelper, schemeName, targetName, configuration string, bundleVersion int64, shortVersion string) error {
 	buildConfig, err := buildConfiguration(helper, targetName, configuration)
 	if err != nil {
 		return err
@@ -155,6 +155,9 @@ func updateVersionNumbersInInfoPlist(helper *projectmanager.ProjectHelper, schem
 	// will define this env var, so we only know its value during an xcodebuild execution. So if we see an env var in
 	// the path, then we have to list the build settings with `xcodebuild -showBuildSettings` to get a valid path value.
 	if hasEnvVars(infoPlistPath) {
+		u.logger.Printf("Info.plist path contains env var: %s\n", infoPlistPath)
+		u.logger.Printf("Using xcodebuild to resolve it\n")
+
 		infoPlistPath, err = extractInfoPlistPathWithXcodebuild(helper.XcProj.Path, schemeName, targetName, configuration)
 		if err != nil {
 			return err
