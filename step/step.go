@@ -3,13 +3,23 @@ package step
 import (
 	"fmt"
 	"path/filepath"
+	"regexp"
 	"strconv"
+	"strings"
 
 	"github.com/bitrise-io/go-steputils/v2/export"
 	"github.com/bitrise-io/go-steputils/v2/stepconf"
+	"github.com/bitrise-io/go-utils/pathutil"
+	"github.com/bitrise-io/go-utils/v2/command"
+	"github.com/bitrise-io/go-utils/v2/env"
 	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/projectmanager"
 	"github.com/bitrise-io/go-xcode/xcodeproject/xcodeproj"
+)
+
+const (
+	infoPlistFileKey = "INFOPLIST_FILE"
+	envVarRegex      = `^.*\$\(.+\).*$`
 )
 
 type Updater struct {
@@ -67,7 +77,7 @@ func (u Updater) Run(config Config) (Result, error) {
 	} else {
 		u.logger.Printf("The version numbers are stored in the plist file.")
 
-		err := updateVersionNumbersInInfoPlist(helper, config.Target, config.Configuration, buildVersion, config.BuildShortVersionString)
+		err := u.updateVersionNumbersInInfoPlist(helper, config.Scheme, config.Target, config.Configuration, buildVersion, config.BuildShortVersionString)
 		if err != nil {
 			return Result{}, err
 		}
@@ -124,32 +134,106 @@ func updateVersionNumbersInProject(helper *projectmanager.ProjectHelper, targetN
 	return nil
 }
 
-func updateVersionNumbersInInfoPlist(helper *projectmanager.ProjectHelper, targetName, configuration string, bundleVersion int64, shortVersion string) error {
+func (u Updater) updateVersionNumbersInInfoPlist(helper *projectmanager.ProjectHelper, schemeName, targetName, configuration string, bundleVersion int64, shortVersion string) error {
 	buildConfig, err := buildConfiguration(helper, targetName, configuration)
 	if err != nil {
 		return err
 	}
 
-	infoPlistPath, err := buildConfig.BuildSettings.String("INFOPLIST_FILE")
+	infoPlistPath, err := buildConfig.BuildSettings.String(infoPlistFileKey)
 	if err != nil {
 		return err
 	}
 
-	absoluteInfoPlistPath := filepath.Join(filepath.Dir(helper.XcProj.Path), infoPlistPath)
+	// By default, the setting for the Info.plist file path is a relative path from the project file. Of course,
+	// developers can override this with something more custom to their setup. They can also use Xcode env vars as part
+	// of their path.
+	//
+	// An example from a SWAT ticket: `$(SRCROOT)/path/to/Info.plist`.
+	//
+	// The problem with this is that it is not a real path until the env var is resolved. And in this case, Xcode
+	// will define this env var, so we only know its value during an xcodebuild execution. So if we see an env var in
+	// the path, then we have to list the build settings with `xcodebuild -showBuildSettings` to get a valid path value.
+	if hasEnvVars(infoPlistPath) {
+		u.logger.Printf("Info.plist path contains env var: %s\n", infoPlistPath)
+		u.logger.Printf("Using xcodebuild to resolve it\n")
 
-	infoPlist, format, _ := xcodeproj.ReadPlistFile(absoluteInfoPlistPath)
+		infoPlistPath, err = extractInfoPlistPathWithXcodebuild(helper.XcProj.Path, schemeName, targetName, configuration)
+		if err != nil {
+			return err
+		}
+	}
+
+	if pathutil.IsRelativePath(infoPlistPath) {
+		infoPlistPath = filepath.Join(filepath.Dir(helper.XcProj.Path), infoPlistPath)
+	}
+
+	infoPlist, format, _ := xcodeproj.ReadPlistFile(infoPlistPath)
 	infoPlist["CFBundleVersion"] = strconv.FormatInt(bundleVersion, 10)
 
 	if shortVersion != "" {
 		infoPlist["CFBundleShortVersionString"] = shortVersion
 	}
 
-	err = xcodeproj.WritePlistFile(absoluteInfoPlistPath, infoPlist, format)
+	err = xcodeproj.WritePlistFile(infoPlistPath, infoPlist, format)
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func hasEnvVars(path string) bool {
+	re := regexp.MustCompile(envVarRegex)
+	containsEnvVar := re.Match([]byte(path))
+
+	return containsEnvVar
+}
+
+func extractInfoPlistPathWithXcodebuild(projectPath, scheme, target, configuration string) (string, error) {
+	args := []string{"-project", projectPath, "-scheme", scheme}
+
+	if target != "" {
+		args = append(args, "-target", target)
+	}
+
+	if configuration != "" {
+		args = append(args, "-configuration", configuration)
+	}
+
+	args = append(args, "-showBuildSettings")
+
+	cmd := command.NewFactory(env.NewRepository()).Create("xcodebuild", args, nil)
+	output, err := cmd.RunAndReturnTrimmedCombinedOutput()
+	if err != nil {
+		return "", err
+	}
+
+	path := infoPlistPathFromOutput(output)
+	if path == "" {
+		return "", fmt.Errorf("missing Info.plist file path")
+	}
+
+	return path, nil
+}
+
+func infoPlistPathFromOutput(output string) string {
+	lines := strings.Split(output, "\n")
+	for _, line := range lines {
+		split := strings.Split(line, " = ")
+
+		if len(split) < 2 {
+			continue
+		}
+
+		if strings.TrimSpace(split[0]) != infoPlistFileKey {
+			continue
+		}
+
+		return strings.TrimSpace(split[1])
+	}
+
+	return ""
 }
 
 func buildConfiguration(helper *projectmanager.ProjectHelper, targetName, configuration string) (*xcodeproj.BuildConfiguration, error) {
