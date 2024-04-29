@@ -47,11 +47,20 @@ func (u Updater) ProcessConfig() (Config, error) {
 		return Config{}, fmt.Errorf("build version offset cannot be a negative value (%d)", input.BuildVersionOffset)
 	}
 
+	u.logger.EnableDebugLog(input.Verbose)
+
 	stepconf.Print(input)
 	u.logger.Println()
 
-	// golangci told me that I should do this instead of creating a Config struct.
-	return Config(input), nil
+	return Config{
+		ProjectPath:             input.ProjectPath,
+		Scheme:                  input.Scheme,
+		Target:                  input.Target,
+		Configuration:           input.Configuration,
+		BuildVersion:            input.BuildVersion,
+		BuildVersionOffset:      input.BuildVersionOffset,
+		BuildShortVersionString: input.BuildShortVersionString,
+	}, nil
 }
 
 func (u Updater) Run(config Config) (Result, error) {
@@ -70,7 +79,7 @@ func (u Updater) Run(config Config) (Result, error) {
 	if generated {
 		u.logger.Printf("The version numbers are stored in the project file.")
 
-		err := updateVersionNumbersInProject(helper, config.Target, config.Configuration, buildVersion, config.BuildShortVersionString)
+		err := u.updateVersionNumbersInProject(helper, config.Target, config.Configuration, buildVersion, config.BuildShortVersionString)
 		if err != nil {
 			return Result{}, err
 		}
@@ -103,7 +112,7 @@ func generatesInfoPlist(helper *projectmanager.ProjectHelper, targetName, config
 	return generatesInfoPlist, err
 }
 
-func updateVersionNumbersInProject(helper *projectmanager.ProjectHelper, targetName, configuration string, bundleVersion int64, shortVersion string) error {
+func (u Updater) updateVersionNumbersInProject(helper *projectmanager.ProjectHelper, targetName, configuration string, bundleVersion int64, shortVersion string) error {
 	if targetName == "" {
 		targetName = helper.MainTarget.Name
 	}
@@ -118,10 +127,18 @@ func updateVersionNumbersInProject(helper *projectmanager.ProjectHelper, targetN
 				continue
 			}
 
+			u.logger.Printf("Updating build settings for the %s target", target.Name)
+
+			oldProjectVersion := buildConfig.BuildSettings["CURRENT_PROJECT_VERSION"]
 			buildConfig.BuildSettings["CURRENT_PROJECT_VERSION"] = bundleVersion
 
+			u.logger.Debugf("CURRENT_PROJECT_VERSION %s -> %d", oldProjectVersion, bundleVersion)
+
 			if shortVersion != "" {
+				oldMarketingVersion := buildConfig.BuildSettings["MARKETING_VERSION"]
 				buildConfig.BuildSettings["MARKETING_VERSION"] = shortVersion
+
+				u.logger.Debugf("MARKETING_VERSION %s -> %s", oldMarketingVersion, shortVersion)
 			}
 		}
 	}
@@ -168,11 +185,20 @@ func (u Updater) updateVersionNumbersInInfoPlist(helper *projectmanager.ProjectH
 		infoPlistPath = filepath.Join(filepath.Dir(helper.XcProj.Path), infoPlistPath)
 	}
 
+	u.logger.Printf("Updating Info.plist at %s", infoPlistPath)
+
 	infoPlist, format, _ := xcodeproj.ReadPlistFile(infoPlistPath)
-	infoPlist["CFBundleVersion"] = strconv.FormatInt(bundleVersion, 10)
+	oldVersion := infoPlist["CFBundleVersion"]
+	newVersion := strconv.FormatInt(bundleVersion, 10)
+	infoPlist["CFBundleVersion"] = newVersion
+
+	u.logger.Debugf("CFBundleVersion %s -> %s", oldVersion, newVersion)
 
 	if shortVersion != "" {
+		oldVersionString := infoPlist["CFBundleShortVersionString"]
 		infoPlist["CFBundleShortVersionString"] = shortVersion
+
+		u.logger.Debugf("CFBundleShortVersionString %s -> %s", oldVersionString, shortVersion)
 	}
 
 	err = xcodeproj.WritePlistFile(infoPlistPath, infoPlist, format)

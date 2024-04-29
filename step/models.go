@@ -8,6 +8,7 @@ type Input struct {
 	BuildVersion            int64  `env:"build_version,required"`
 	BuildVersionOffset      int64  `env:"build_version_offset"`
 	BuildShortVersionString string `env:"build_short_version_string"`
+	Verbose                 bool   `env:"verbose,required"`
 }
 
 type Config struct {

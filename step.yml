@@ -112,6 +112,16 @@ inputs:
 
       If it is empty then the step will not modify the existing value.
 
+- verbose: "false"
+  opts:
+    category: Debug
+    title: Enable verbose logging
+    summary: Enable logging additional information for debugging.
+    is_required: true
+    value_options:
+    - "true"
+    - "false"
+
 outputs:
 - XCODE_BUNDLE_VERSION:
   opts:
