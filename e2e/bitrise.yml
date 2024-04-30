@@ -66,6 +66,7 @@ workflows:
         - build_version: 9994
         - build_version_offset: 5
         - build_short_version_string: 9.99.9
+        - verbose: "true"
     - script:
         title: Build app
         inputs:
