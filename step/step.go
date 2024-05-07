@@ -187,7 +187,11 @@ func (u Updater) updateVersionNumbersInInfoPlist(helper *projectmanager.ProjectH
 
 	u.logger.Printf("Updating Info.plist at %s", infoPlistPath)
 
-	infoPlist, format, _ := xcodeproj.ReadPlistFile(infoPlistPath)
+	infoPlist, format, err := xcodeproj.ReadPlistFile(infoPlistPath)
+	if err != nil {
+		return err
+	}
+
 	oldVersion := infoPlist["CFBundleVersion"]
 	newVersion := strconv.FormatInt(bundleVersion, 10)
 	infoPlist["CFBundleVersion"] = newVersion
