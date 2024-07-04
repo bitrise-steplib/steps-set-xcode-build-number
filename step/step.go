@@ -14,6 +14,7 @@ import (
 	"github.com/bitrise-io/go-utils/v2/env"
 	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/projectmanager"
+	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
 	"github.com/bitrise-io/go-xcode/xcodeproject/xcodeproj"
 )
 
@@ -158,8 +159,20 @@ func (u Updater) updateVersionNumbersInInfoPlist(helper *projectmanager.ProjectH
 	}
 
 	infoPlistPath, err := buildConfig.BuildSettings.String(infoPlistFileKey)
+	// If the path is extracted into a xcconfig file, then it will not appear here in the build settings.
+	// We need to use xcodebuild to resolve the path.
 	if err != nil {
-		return err
+		if !serialized.IsKeyNotFoundError(err) {
+			return err
+		}
+
+		u.logger.Printf("Info.plist path was not found in the project\n")
+		u.logger.Printf("Using xcodebuild to resolve it\n")
+
+		infoPlistPath, err = extractInfoPlistPathWithXcodebuild(helper.XcProj.Path, schemeName, targetName, configuration)
+		if err != nil {
+			return err
+		}
 	}
 
 	// By default, the setting for the Info.plist file path is a relative path from the project file. Of course,
@@ -221,10 +234,12 @@ func hasEnvVars(path string) bool {
 }
 
 func extractInfoPlistPathWithXcodebuild(projectPath, scheme, target, configuration string) (string, error) {
-	args := []string{"-project", projectPath, "-scheme", scheme}
+	args := []string{"-project", projectPath}
 
 	if target != "" {
 		args = append(args, "-target", target)
+	} else if scheme != "" {
+		args = append(args, "-scheme", scheme)
 	}
 
 	if configuration != "" {
