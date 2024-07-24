@@ -1,0 +1,11 @@
+//
+//  Config.xcconfig
+//  Example
+//
+//  Created by Szabolcs Toth on 04/07/2024.
+//
+
+// Configuration settings file format documentation can be found at:
+// https://help.apple.com/xcode/#/dev745c5c974
+
+INFOPLIST_FILE = Example/Example-Static-Info.plist
