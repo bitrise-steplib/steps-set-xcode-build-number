@@ -302,5 +302,5 @@ func buildConfiguration(helper *projectmanager.ProjectHelper, targetName, config
 		}
 	}
 
-	return nil, fmt.Errorf("")
+	return nil, fmt.Errorf("build configuration not found for target '%s' with configuration name '%s'", targetName, configuration)
 }
