@@ -290,17 +290,29 @@ func buildConfiguration(helper *projectmanager.ProjectHelper, targetName, config
 		configuration = helper.MainTarget.BuildConfigurationList.DefaultConfigurationName
 	}
 
+	var xcodeprojTarget *xcodeproj.Target
 	for _, target := range helper.XcProj.Proj.Targets {
-		if target.Name != targetName {
-			continue
-		}
-
-		for _, buildConfig := range target.BuildConfigurationList.BuildConfigurations {
-			if buildConfig.Name == configuration {
-				return &buildConfig, nil
-			}
+		if target.Name == targetName {
+			xcodeprojTarget = &target
+			break
 		}
 	}
 
-	return nil, fmt.Errorf("")
+	if xcodeprojTarget == nil {
+		return nil, fmt.Errorf("target '%s' not found in project: %s", targetName, helper.XcProj.Path)
+	}
+
+	var xcodeprojBuildConfiguration *xcodeproj.BuildConfiguration
+	for _, buildConfig := range xcodeprojTarget.BuildConfigurationList.BuildConfigurations {
+		if buildConfig.Name == configuration {
+			xcodeprojBuildConfiguration = &buildConfig
+			break
+		}
+	}
+
+	if xcodeprojBuildConfiguration == nil {
+		return nil, fmt.Errorf("build configuration '%s' not found for target '%s' in project: %s", configuration, targetName, helper.XcProj.Path)
+	}
+
+	return xcodeprojBuildConfiguration, nil
 }
