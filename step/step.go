@@ -45,7 +45,7 @@ func (u Updater) ProcessConfig() (Config, error) {
 	}
 
 	if input.BuildVersionOffset < 0 {
-		return Config{}, fmt.Errorf("build version offset cannot be a negative value (%d)", input.BuildVersionOffset)
+		log.NewLogger().Infof("Build version offset is negative (%d), skipping version increment.", input.BuildVersionOffset)
 	}
 
 	u.logger.EnableDebugLog(input.Verbose)
@@ -76,6 +76,9 @@ func (u Updater) Run(config Config) (Result, error) {
 	}
 
 	buildVersion := config.BuildVersion + config.BuildVersionOffset
+	if config.BuildVersionOffset < 0 { // Skip version increment, as it is done by the user
+		buildVersion = config.BuildVersion
+	}
 
 	if generated {
 		u.logger.Printf("The version numbers are stored in the project file.")

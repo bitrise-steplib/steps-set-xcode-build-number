@@ -17,6 +17,8 @@ workflows:
     - STEP_NAME: $GENERATED_NAME
     - STEP_TYPE: workspace
     - STEP_BUILD_ROOT: $WORKSPACE_ROOT
+    - BUILD_VERSION: 9994
+    - VERSION_OFFSET: 5
     after_run:
     - _set-build-and-assert
 
@@ -26,6 +28,19 @@ workflows:
     - STEP_NAME: $STATIC_NAME
     - STEP_TYPE: workspace
     - STEP_BUILD_ROOT: $WORKSPACE_ROOT
+    - BUILD_VERSION: 9994
+    - VERSION_OFFSET: 5
+    after_run:
+    - _set-build-and-assert
+
+  test_workspace-with-static-plist-skip-version-increment:
+    envs:
+    - STEP_PATH: $WORKSPACE_ROOT/$WORKSPACE_FILE
+    - STEP_NAME: $STATIC_NAME
+    - STEP_TYPE: workspace
+    - STEP_BUILD_ROOT: $WORKSPACE_ROOT
+    - BUILD_VERSION: 9999
+    - VERSION_OFFSET: -1
     after_run:
     - _set-build-and-assert
 
@@ -35,6 +50,8 @@ workflows:
     - STEP_NAME: $GENERATED_NAME
     - STEP_TYPE: project
     - STEP_BUILD_ROOT: $PROJECT_ROOT
+    - BUILD_VERSION: 9994
+    - VERSION_OFFSET: 5
     after_run:
     - _set-build-and-assert
 
@@ -44,6 +61,8 @@ workflows:
     - STEP_NAME: $STATIC_NAME
     - STEP_TYPE: project
     - STEP_BUILD_ROOT: $PROJECT_ROOT
+    - BUILD_VERSION: 9994
+    - VERSION_OFFSET: 5
     after_run:
     - _set-build-and-assert
 
@@ -63,8 +82,8 @@ workflows:
         - project_path: $STEP_PATH
         - scheme: $STEP_NAME
         - target: $STEP_NAME
-        - build_version: 9994
-        - build_version_offset: 5
+        - build_version: $BUILD_VERSION
+        - build_version_offset: $VERSION_OFFSET
         - build_short_version_string: 9.99.9
         - verbose: "true"
     - script:
