@@ -44,10 +44,6 @@ func (u Updater) ProcessConfig() (Config, error) {
 		return Config{}, err
 	}
 
-	if input.BuildVersionOffset < 0 {
-		log.NewLogger().Infof("Build version offset is negative (%d), skipping version increment.", input.BuildVersionOffset)
-	}
-
 	u.logger.EnableDebugLog(input.Verbose)
 
 	stepconf.Print(input)
@@ -75,8 +71,11 @@ func (u Updater) Run(config Config) (Result, error) {
 		return Result{}, err
 	}
 
-	buildVersion := config.BuildVersion + config.BuildVersionOffset
-	if config.BuildVersionOffset < 0 { // Skip version increment, as it is done by the user
+	var buildVersion int64
+	if config.BuildVersionOffset >= 0 {
+		buildVersion = config.BuildVersion + config.BuildVersionOffset
+	} else {
+		log.NewLogger().Infof("Build version offset is negative (%d), skipping version increment.", input.BuildVersionOffset)
 		buildVersion = config.BuildVersion
 	}
 
