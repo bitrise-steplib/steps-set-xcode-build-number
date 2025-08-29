@@ -75,7 +75,7 @@ func (u Updater) Run(config Config) (Result, error) {
 	if config.BuildVersionOffset >= 0 {
 		buildVersion = config.BuildVersion + config.BuildVersionOffset
 	} else {
-		log.NewLogger().Infof("Build version offset is negative (%d), skipping version increment.", input.BuildVersionOffset)
+		log.NewLogger().Infof("Build version offset is negative (%d), skipping version increment.", config.BuildVersionOffset)
 		buildVersion = config.BuildVersion
 	}
 

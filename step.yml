@@ -102,7 +102,10 @@ inputs:
   opts:
     title: Build Number Offset
     description: |-
-      This offset will be added to `build_version` input's value. It must be a positive number.
+      This offset will be added to `build_version` input's value. It must be a positive number in this case.
+
+      If you want to set the build version explicitly, set this to a negative number (e.g. -1).
+      In that case the offset is not added and the build version is set to the value of the Build Number (`build_version`) input.
 
 - build_short_version_string:
   opts:
