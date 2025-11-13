@@ -39,12 +39,13 @@ type_tags:
 - utility
 
 project_type_tags:
+- cordova
+- flutter
+- ionic
 - ios
+- kotlin-multiplatform
 - macos
 - react-native
-- flutter
-- cordova
-- ionic
 
 toolkit:
   go:

@@ -86,14 +86,12 @@ workflows:
         - build_version_offset: $VERSION_OFFSET
         - build_short_version_string: 9.99.9
         - verbose: "true"
-    - script:
+    - xcode-build-for-simulator:
         title: Build app
         inputs:
-        - content: |
-            #!/bin/bash
-            set -ex
-
-            xcodebuild -$STEP_TYPE $STEP_PATH -scheme $STEP_NAME -sdk iphonesimulator -configuration Release SYMROOT=./build
+        - project_path: $STEP_PATH
+        - scheme: $STEP_NAME
+        - configuration: Release
     - script:
         title: Check version and build numbers
         inputs:
@@ -101,8 +99,8 @@ workflows:
             #!/bin/bash
             set -ex
 
-            buildVersion=$(/usr/libexec/PlistBuddy "$STEP_BUILD_ROOT/build/Release-iphonesimulator/$STEP_NAME.app/Info.plist" -c "print CFBundleVersion")
-            buildShortVersion=$(/usr/libexec/PlistBuddy "$STEP_BUILD_ROOT/build/Release-iphonesimulator/$STEP_NAME.app/Info.plist" -c "print CFBundleShortVersionString")
+            buildVersion=$(/usr/libexec/PlistBuddy "$BITRISE_APP_DIR_PATH/Info.plist" -c "print CFBundleVersion")
+            buildShortVersion=$(/usr/libexec/PlistBuddy "$BITRISE_APP_DIR_PATH/Info.plist" -c "print CFBundleShortVersionString")
 
             if [ "$buildVersion" != "9999" ]; then
               echo "CFBundleVersion is wrong"
