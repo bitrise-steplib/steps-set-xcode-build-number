@@ -71,25 +71,39 @@ func (u Updater) Run(config Config) (Result, error) {
 		return Result{}, err
 	}
 
-	var buildVersion int64
-	if config.BuildVersionOffset >= 0 {
-		buildVersion = config.BuildVersion + config.BuildVersionOffset
+	// Check if build version is numeric
+	parsedBuildVersion, err := strconv.ParseInt(config.BuildVersion, 10, 64)
+	if err != nil {
+		u.logger.Infof("Build version is not numeric (%s), skipping version increment.", config.BuildVersion)
+
+		versionParts := strings.Split(config.BuildVersion, ".")
+		if len(versionParts) < 3 {
+			return Result{}, fmt.Errorf("build version '%s' is not in the expected format (e.g. 1.2.3)", config.BuildVersion)
+		}
+
+		parsedBuildVersion, err = strconv.ParseInt(versionParts[2], 10, 64)
+		if err != nil {
+			return Result{}, fmt.Errorf("build version '%s' is not in the expected format: %v", config.BuildVersion, err)
+		}
 	} else {
-		u.logger.Infof("Build version offset is negative (%d), skipping version increment.", config.BuildVersionOffset)
-		buildVersion = config.BuildVersion
+		if config.BuildVersionOffset >= 0 {
+			parsedBuildVersion = parsedBuildVersion + config.BuildVersionOffset
+		} else {
+			u.logger.Infof("Build version offset is negative (%d), skipping version increment.", config.BuildVersionOffset)
+		}
 	}
 
 	if generated {
 		u.logger.Printf("The version numbers are stored in the project file.")
 
-		err := u.updateVersionNumbersInProject(helper, config.Target, config.Configuration, buildVersion, config.BuildShortVersionString)
+		err := u.updateVersionNumbersInProject(helper, config.Target, config.Configuration, parsedBuildVersion, config.BuildShortVersionString)
 		if err != nil {
 			return Result{}, err
 		}
 	} else {
 		u.logger.Printf("The version numbers are stored in the plist file.")
 
-		err := u.updateVersionNumbersInInfoPlist(helper, config.Scheme, config.Target, config.Configuration, buildVersion, config.BuildShortVersionString)
+		err := u.updateVersionNumbersInInfoPlist(helper, config.Scheme, config.Target, config.Configuration, parsedBuildVersion, config.BuildShortVersionString)
 		if err != nil {
 			return Result{}, err
 		}
@@ -97,7 +111,7 @@ func (u Updater) Run(config Config) (Result, error) {
 
 	u.logger.Donef("Version numbers successfully updated.")
 
-	return Result{BuildVersion: buildVersion}, nil
+	return Result{BuildVersion: parsedBuildVersion}, nil
 }
 
 func (u Updater) Export(result Result) error {
