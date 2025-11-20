@@ -140,3 +140,5 @@ workflows:
               echo "CFBundleShortVersionString is wrong"
               exit 1
             fi
+
+            rm -r $BITRISE_APP_DIR_PATH
