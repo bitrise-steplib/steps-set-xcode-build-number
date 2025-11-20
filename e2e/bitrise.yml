@@ -22,6 +22,17 @@ workflows:
     after_run:
     - _set-build-and-assert
 
+  test_workspace-with-generated-plist-string-build-version:
+    envs:
+    - STEP_PATH: $WORKSPACE_ROOT/$WORKSPACE_FILE
+    - STEP_NAME: $GENERATED_NAME
+    - STEP_TYPE: workspace
+    - STEP_BUILD_ROOT: $WORKSPACE_ROOT
+    - BUILD_VERSION: 1.2.9999.3
+    - VERSION_OFFSET: 5
+    after_run:
+    - _set-build-and-assert
+
   test_workspace-with-static-plist:
     envs:
     - STEP_PATH: $WORKSPACE_ROOT/$WORKSPACE_FILE
