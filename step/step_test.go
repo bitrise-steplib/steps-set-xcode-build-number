@@ -1,7 +1,6 @@
 package step
 
 import (
-	"strconv"
 	"testing"
 
 	"github.com/bitrise-io/go-steputils/v2/export"
@@ -14,10 +13,10 @@ import (
 )
 
 func TestExport(t *testing.T) {
-	result := Result{BuildVersion: 999}
+	result := Result{BuildVersion: "999"}
 
 	mockFactory := mocks.NewFactory(t)
-	arguments := []string{"add", "--key", "XCODE_BUNDLE_VERSION", "--value", strconv.FormatInt(result.BuildVersion, 10)}
+	arguments := []string{"add", "--key", "XCODE_BUNDLE_VERSION", "--value", result.BuildVersion}
 	mockFactory.On("Create", "envman", arguments, (*command.Opts)(nil)).Return(testCommand())
 
 	inputParser := stepconf.NewInputParser(env.NewRepository())
