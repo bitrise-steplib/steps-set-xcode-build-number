@@ -72,22 +72,14 @@ func (u Updater) Run(config Config) (Result, error) {
 	}
 
 	// Check if build version is numeric
+	buildVersion := ""
 	parsedBuildVersion, err := strconv.ParseInt(config.BuildVersion, 10, 64)
 	if err != nil {
 		u.logger.Infof("Build version is not numeric (%s), skipping version increment.", config.BuildVersion)
-
-		versionParts := strings.Split(config.BuildVersion, ".")
-		if len(versionParts) < 3 {
-			return Result{}, fmt.Errorf("build version '%s' is not in the expected format (e.g. 1.2.3)", config.BuildVersion)
-		}
-
-		parsedBuildVersion, err = strconv.ParseInt(versionParts[2], 10, 64)
-		if err != nil {
-			return Result{}, fmt.Errorf("build version '%s' is not in the expected format: %v", config.BuildVersion, err)
-		}
+		buildVersion = config.BuildVersion
 	} else {
 		if config.BuildVersionOffset >= 0 {
-			parsedBuildVersion = parsedBuildVersion + config.BuildVersionOffset
+			buildVersion = strconv.FormatInt(parsedBuildVersion+config.BuildVersionOffset, 10)
 		} else {
 			u.logger.Infof("Build version offset is negative (%d), skipping version increment.", config.BuildVersionOffset)
 		}
@@ -96,14 +88,14 @@ func (u Updater) Run(config Config) (Result, error) {
 	if generated {
 		u.logger.Printf("The version numbers are stored in the project file.")
 
-		err := u.updateVersionNumbersInProject(helper, config.Target, config.Configuration, parsedBuildVersion, config.BuildShortVersionString)
+		err := u.updateVersionNumbersInProject(helper, config.Target, config.Configuration, buildVersion, config.BuildShortVersionString)
 		if err != nil {
 			return Result{}, err
 		}
 	} else {
 		u.logger.Printf("The version numbers are stored in the plist file.")
 
-		err := u.updateVersionNumbersInInfoPlist(helper, config.Scheme, config.Target, config.Configuration, parsedBuildVersion, config.BuildShortVersionString)
+		err := u.updateVersionNumbersInInfoPlist(helper, config.Scheme, config.Target, config.Configuration, buildVersion, config.BuildShortVersionString)
 		if err != nil {
 			return Result{}, err
 		}
@@ -111,11 +103,11 @@ func (u Updater) Run(config Config) (Result, error) {
 
 	u.logger.Donef("Version numbers successfully updated.")
 
-	return Result{BuildVersion: parsedBuildVersion}, nil
+	return Result{BuildVersion: buildVersion}, nil
 }
 
 func (u Updater) Export(result Result) error {
-	return u.exporter.ExportOutput("XCODE_BUNDLE_VERSION", strconv.FormatInt(result.BuildVersion, 10))
+	return u.exporter.ExportOutput("XCODE_BUNDLE_VERSION", result.BuildVersion)
 }
 
 func generatesInfoPlist(helper *projectmanager.ProjectHelper, targetName, configuration string) (bool, error) {
@@ -129,7 +121,7 @@ func generatesInfoPlist(helper *projectmanager.ProjectHelper, targetName, config
 	return generatesInfoPlist, err
 }
 
-func (u Updater) updateVersionNumbersInProject(helper *projectmanager.ProjectHelper, targetName, configuration string, bundleVersion int64, shortVersion string) error {
+func (u Updater) updateVersionNumbersInProject(helper *projectmanager.ProjectHelper, targetName, configuration string, bundleVersion, shortVersion string) error {
 	if targetName == "" {
 		targetName = helper.MainTarget.Name
 	}
@@ -168,7 +160,7 @@ func (u Updater) updateVersionNumbersInProject(helper *projectmanager.ProjectHel
 	return nil
 }
 
-func (u Updater) updateVersionNumbersInInfoPlist(helper *projectmanager.ProjectHelper, schemeName, targetName, configuration string, bundleVersion int64, shortVersion string) error {
+func (u Updater) updateVersionNumbersInInfoPlist(helper *projectmanager.ProjectHelper, schemeName, targetName, configuration string, bundleVersion, shortVersion string) error {
 	buildConfig, err := buildConfiguration(helper, targetName, configuration)
 	if err != nil {
 		return err
@@ -222,10 +214,9 @@ func (u Updater) updateVersionNumbersInInfoPlist(helper *projectmanager.ProjectH
 	}
 
 	oldVersion := infoPlist["CFBundleVersion"]
-	newVersion := strconv.FormatInt(bundleVersion, 10)
-	infoPlist["CFBundleVersion"] = newVersion
+	infoPlist["CFBundleVersion"] = bundleVersion
 
-	u.logger.Debugf("CFBundleVersion %s -> %s", oldVersion, newVersion)
+	u.logger.Debugf("CFBundleVersion %s -> %s", oldVersion, bundleVersion)
 
 	if shortVersion != "" {
 		oldVersionString := infoPlist["CFBundleShortVersionString"]

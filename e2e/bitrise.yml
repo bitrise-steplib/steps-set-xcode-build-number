@@ -19,6 +19,7 @@ workflows:
     - STEP_BUILD_ROOT: $WORKSPACE_ROOT
     - BUILD_VERSION: 9994
     - VERSION_OFFSET: 5
+    - EXPECTED_BUILD_VERSION: 9999
     after_run:
     - _set-build-and-assert
 
@@ -30,6 +31,7 @@ workflows:
     - STEP_BUILD_ROOT: $WORKSPACE_ROOT
     - BUILD_VERSION: 1.2.9999.3
     - VERSION_OFFSET: 5
+    - EXPECTED_BUILD_VERSION: 1.2.9999.3
     after_run:
     - _set-build-and-assert
 
@@ -41,6 +43,7 @@ workflows:
     - STEP_BUILD_ROOT: $WORKSPACE_ROOT
     - BUILD_VERSION: 9994
     - VERSION_OFFSET: 5
+    - EXPECTED_BUILD_VERSION: 9999
     after_run:
     - _set-build-and-assert
 
@@ -52,6 +55,19 @@ workflows:
     - STEP_BUILD_ROOT: $WORKSPACE_ROOT
     - BUILD_VERSION: 9999
     - VERSION_OFFSET: -1
+    - EXPECTED_BUILD_VERSION: 9999
+    after_run:
+    - _set-build-and-assert
+
+  test_workspace-with-static-plist-string-build-version:
+    envs:
+    - STEP_PATH: $WORKSPACE_ROOT/$WORKSPACE_FILE
+    - STEP_NAME: $STATIC_NAME
+    - STEP_TYPE: workspace
+    - STEP_BUILD_ROOT: $WORKSPACE_ROOT
+    - BUILD_VERSION: 1.2.9999.3
+    - VERSION_OFFSET: 5
+    - EXPECTED_BUILD_VERSION: 1.2.9999.3
     after_run:
     - _set-build-and-assert
 
@@ -63,6 +79,7 @@ workflows:
     - STEP_BUILD_ROOT: $PROJECT_ROOT
     - BUILD_VERSION: 9994
     - VERSION_OFFSET: 5
+    - EXPECTED_BUILD_VERSION: 9999
     after_run:
     - _set-build-and-assert
 
@@ -74,6 +91,7 @@ workflows:
     - STEP_BUILD_ROOT: $PROJECT_ROOT
     - BUILD_VERSION: 9994
     - VERSION_OFFSET: 5
+    - EXPECTED_BUILD_VERSION: 9999
     after_run:
     - _set-build-and-assert
 
@@ -113,7 +131,7 @@ workflows:
             buildVersion=$(/usr/libexec/PlistBuddy "$BITRISE_APP_DIR_PATH/Info.plist" -c "print CFBundleVersion")
             buildShortVersion=$(/usr/libexec/PlistBuddy "$BITRISE_APP_DIR_PATH/Info.plist" -c "print CFBundleShortVersionString")
 
-            if [ "$buildVersion" != "9999" ]; then
+            if [ "$buildVersion" != "$EXPECTED_BUILD_VERSION" ]; then
               echo "CFBundleVersion is wrong"
               exit 1
             fi

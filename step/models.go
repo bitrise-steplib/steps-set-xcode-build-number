@@ -22,5 +22,5 @@ type Config struct {
 }
 
 type Result struct {
-	BuildVersion int64
+	BuildVersion string
 }
