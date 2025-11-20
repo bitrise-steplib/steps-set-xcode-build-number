@@ -72,7 +72,6 @@ func (u Updater) Run(config Config) (Result, error) {
 	}
 
 	// Check if build version is numeric
-	buildVersion := config.BuildVersion
 	parsedBuildVersion, err := strconv.ParseInt(config.BuildVersion, 10, 64)
 	if err != nil {
 		u.logger.Infof("Build version is not numeric (%s), skipping version increment.", config.BuildVersion)
@@ -81,7 +80,7 @@ func (u Updater) Run(config Config) (Result, error) {
 		}
 	} else {
 		if config.BuildVersionOffset >= 0 {
-			buildVersion = strconv.FormatInt(parsedBuildVersion+config.BuildVersionOffset, 10)
+			config.BuildVersion = strconv.FormatInt(parsedBuildVersion+config.BuildVersionOffset, 10)
 		} else {
 			u.logger.Infof("Build version offset is negative (%d), skipping version increment.", config.BuildVersionOffset)
 		}
@@ -90,14 +89,14 @@ func (u Updater) Run(config Config) (Result, error) {
 	if generated {
 		u.logger.Printf("The version numbers are stored in the project file.")
 
-		err := u.updateVersionNumbersInProject(helper, config.Target, config.Configuration, buildVersion, config.BuildShortVersionString)
+		err := u.updateVersionNumbersInProject(helper, config.Target, config.Configuration, config.BuildVersion, config.BuildShortVersionString)
 		if err != nil {
 			return Result{}, err
 		}
 	} else {
 		u.logger.Printf("The version numbers are stored in the plist file.")
 
-		err := u.updateVersionNumbersInInfoPlist(helper, config.Scheme, config.Target, config.Configuration, buildVersion, config.BuildShortVersionString)
+		err := u.updateVersionNumbersInInfoPlist(helper, config.Scheme, config.Target, config.Configuration, config.BuildVersion, config.BuildShortVersionString)
 		if err != nil {
 			return Result{}, err
 		}
@@ -105,7 +104,7 @@ func (u Updater) Run(config Config) (Result, error) {
 
 	u.logger.Donef("Version numbers successfully updated.")
 
-	return Result{BuildVersion: buildVersion}, nil
+	return Result{BuildVersion: config.BuildVersion}, nil
 }
 
 func (u Updater) Export(result Result) error {
