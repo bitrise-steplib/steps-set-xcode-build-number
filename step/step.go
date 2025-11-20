@@ -76,6 +76,9 @@ func (u Updater) Run(config Config) (Result, error) {
 	parsedBuildVersion, err := strconv.ParseInt(config.BuildVersion, 10, 64)
 	if err != nil {
 		u.logger.Infof("Build version is not numeric (%s), skipping version increment.", config.BuildVersion)
+		if config.BuildVersionOffset > 0 {
+			return Result{}, fmt.Errorf("build version offset (%d) cannot be applied to non-numeric build version (%s), use 0 or -1 offset", config.BuildVersionOffset, config.BuildVersion)
+		}
 		buildVersion = config.BuildVersion
 	} else {
 		if config.BuildVersionOffset >= 0 {
@@ -141,7 +144,7 @@ func (u Updater) updateVersionNumbersInProject(helper *projectmanager.ProjectHel
 			oldProjectVersion := buildConfig.BuildSettings["CURRENT_PROJECT_VERSION"]
 			buildConfig.BuildSettings["CURRENT_PROJECT_VERSION"] = bundleVersion
 
-			u.logger.Debugf("CURRENT_PROJECT_VERSION %s -> %d", oldProjectVersion, bundleVersion)
+			u.logger.Debugf("CURRENT_PROJECT_VERSION %s -> %s", oldProjectVersion, bundleVersion)
 
 			if shortVersion != "" {
 				oldMarketingVersion := buildConfig.BuildSettings["MARKETING_VERSION"]
