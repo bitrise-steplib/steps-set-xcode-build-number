@@ -76,7 +76,7 @@ func (u Updater) Run(config Config) (Result, error) {
 	if err != nil {
 		u.logger.Infof("Provided build version is not numeric (%s), using it as-is without incrementing", config.BuildVersion)
 		if config.BuildVersionOffset > 0 {
-			return Result{}, fmt.Errorf("build version offset (%d) cannot be applied to non-numeric build version (%s), use 0 or -1 offset", config.BuildVersionOffset, config.BuildVersion)
+			return Result{}, fmt.Errorf("build version offset (%d) cannot be applied to non-numeric build version (%s), use 0 or -1 as the offset to use the build version as-is", config.BuildVersionOffset, config.BuildVersion)
 		}
 	} else {
 		if config.BuildVersionOffset >= 0 {
