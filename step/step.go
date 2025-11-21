@@ -117,7 +117,7 @@ func incrementBuildVersion(logger log.Logger, buildVersion string, offset int64)
 	parsedBuildVersion, err := strconv.ParseInt(buildVersion, 10, 64)
 	if err != nil {
 		logger.Infof("Provided build version is not numeric (%s), using it as-is without incrementing", buildVersion)
-		if offset > 0 {
+		if offset != 0 {
 			return "", fmt.Errorf("build version offset (%d) cannot be applied to non-numeric build version (%s), use 0 as the offset to use the build version as-is", offset, buildVersion)
 		}
 		return buildVersion, nil
