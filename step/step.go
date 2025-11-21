@@ -74,7 +74,7 @@ func (u Updater) Run(config Config) (Result, error) {
 	// Check if build version is numeric
 	parsedBuildVersion, err := strconv.ParseInt(config.BuildVersion, 10, 64)
 	if err != nil {
-		u.logger.Infof("Build version is not numeric (%s), skipping version increment.", config.BuildVersion)
+		u.logger.Infof("Provided build version is not numeric (%s), using it as-is without incrementing", config.BuildVersion)
 		if config.BuildVersionOffset > 0 {
 			return Result{}, fmt.Errorf("build version offset (%d) cannot be applied to non-numeric build version (%s), use 0 or -1 offset", config.BuildVersionOffset, config.BuildVersion)
 		}
