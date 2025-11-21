@@ -71,19 +71,9 @@ func (u Updater) Run(config Config) (Result, error) {
 		return Result{}, err
 	}
 
-	// Check if build version is numeric
-	parsedBuildVersion, err := strconv.ParseInt(config.BuildVersion, 10, 64)
+	config.BuildVersion, err = incrementBuildVersion(u.logger, config.BuildVersion, config.BuildVersionOffset)
 	if err != nil {
-		u.logger.Infof("Provided build version is not numeric (%s), using it as-is without incrementing", config.BuildVersion)
-		if config.BuildVersionOffset > 0 {
-			return Result{}, fmt.Errorf("build version offset (%d) cannot be applied to non-numeric build version (%s), use 0 or -1 as the offset to use the build version as-is", config.BuildVersionOffset, config.BuildVersion)
-		}
-	} else {
-		if config.BuildVersionOffset >= 0 {
-			config.BuildVersion = strconv.FormatInt(parsedBuildVersion+config.BuildVersionOffset, 10)
-		} else {
-			u.logger.Infof("Build version offset is negative (%d), skipping version increment.", config.BuildVersionOffset)
-		}
+		return Result{}, err
 	}
 
 	if generated {
@@ -120,6 +110,25 @@ func generatesInfoPlist(helper *projectmanager.ProjectHelper, targetName, config
 	generatesInfoPlist := buildConfig.BuildSettings["GENERATE_INFOPLIST_FILE"] == "YES"
 
 	return generatesInfoPlist, err
+}
+
+func incrementBuildVersion(logger log.Logger, buildVersion string, offset int64) (string, error) {
+	// Check if build version is numeric
+	parsedBuildVersion, err := strconv.ParseInt(buildVersion, 10, 64)
+	if err != nil {
+		logger.Infof("Provided build version is not numeric (%s), using it as-is without incrementing", buildVersion)
+		if offset > 0 {
+			return "", fmt.Errorf("build version offset (%d) cannot be applied to non-numeric build version (%s), use 0 as the offset to use the build version as-is", offset, buildVersion)
+		}
+		return buildVersion, nil
+	}
+
+	// Numeric build version provided, increment it
+	if offset >= 0 {
+		return strconv.FormatInt(parsedBuildVersion+offset, 10), nil
+	}
+	logger.Infof("Build version offset is negative (%d), skipping version increment.", offset)
+	return buildVersion, nil
 }
 
 func (u Updater) updateVersionNumbersInProject(helper *projectmanager.ProjectHelper, targetName, configuration string, bundleVersion, shortVersion string) error {
