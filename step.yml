@@ -97,6 +97,9 @@ inputs:
     title: Build Number
     description: |-
       This will be either the CFBundleVersion in the Info.plist file or the CURRENT_PROJECT_VERSION in the project file.
+
+      If it is numeric then the step will increment it based on the `build_version_offset` input's value.
+      If the value is not numeric then the step will set the build version directly without any incrementing.
     is_required: true
 
 - build_version_offset:
