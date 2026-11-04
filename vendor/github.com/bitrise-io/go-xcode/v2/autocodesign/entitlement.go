@@ -3,15 +3,21 @@ package autocodesign
 import (
 	"errors"
 	"fmt"
+	"slices"
 
 	"github.com/bitrise-io/go-utils/log"
-	"github.com/bitrise-io/go-utils/sliceutil"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/appstoreconnect"
-	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
+	"github.com/bitrise-io/go-xcode/v2/xcodeproject/serialized"
 )
 
 // ICloudIdentifiersEntitlementKey ...
 const ICloudIdentifiersEntitlementKey = "com.apple.developer.icloud-container-identifiers"
+
+// ErrUnknownEntitlementKey signals that an entitlement key is not present in
+// appstoreconnect.ServiceTypeByKey. Callers iterating over a project's full
+// entitlement set (e.g. SyncBundleID) can use errors.Is to skip unknown keys
+// with a warning instead of aborting the code signing flow.
+var ErrUnknownEntitlementKey = errors.New("unknown entitlement key")
 
 // DataProtections ...
 var DataProtections = map[string]appstoreconnect.CapabilityOptionKey{
@@ -44,7 +50,7 @@ func (e Entitlement) Capability() (*appstoreconnect.BundleIDCapability, error) {
 
 	capType, ok := appstoreconnect.ServiceTypeByKey[entKey]
 	if !ok {
-		return nil, errors.New("unknown entitlement key: " + entKey)
+		return nil, fmt.Errorf("%w: %s", ErrUnknownEntitlementKey, entKey)
 	}
 
 	if capType == appstoreconnect.Ignored {
@@ -63,8 +69,8 @@ func (e Entitlement) Capability() (*appstoreconnect.BundleIDCapability, error) {
 		}
 		capSetts = append(capSetts, capSett)
 	} else if capType == appstoreconnect.DataProtection {
-		entVal, err := serialized.Object(e).String(entKey)
-		if err != nil {
+		entVal, ok := serialized.Object(e).String(entKey)
+		if !ok {
 			return nil, errors.New("no entitlements value for key: " + entKey)
 		}
 
@@ -144,7 +150,7 @@ func (e Entitlement) Equal(cap appstoreconnect.BundleIDCapability, allEntitlemen
 
 	capType, ok := appstoreconnect.ServiceTypeByKey[entKey]
 	if !ok {
-		return false, errors.New("unknown entitlement key: " + entKey)
+		return false, fmt.Errorf("%w: %s", ErrUnknownEntitlementKey, entKey)
 	}
 
 	if cap.Attributes.CapabilityType != capType {
@@ -154,9 +160,9 @@ func (e Entitlement) Equal(cap appstoreconnect.BundleIDCapability, allEntitlemen
 	if capType == appstoreconnect.ICloud {
 		return iCloudEquals(allEntitlements, cap)
 	} else if capType == appstoreconnect.DataProtection {
-		entVal, err := serialized.Object(e).String(entKey)
-		if err != nil {
-			return false, err
+		entVal, ok := serialized.Object(e).String(entKey)
+		if !ok {
+			return false, fmt.Errorf("entitlement %s is not a string", entKey)
 		}
 		return dataProtectionEquals(entVal, cap)
 	}
@@ -165,20 +171,22 @@ func (e Entitlement) Equal(cap appstoreconnect.BundleIDCapability, allEntitlemen
 }
 
 func (e Entitlements) iCloudServices() (iCloudDocuments, iCloudKit, keyValueStorage bool, err error) {
-	v, err := serialized.Object(e).String("com.apple.developer.ubiquity-kvstore-identifier")
-	if err != nil && !serialized.IsKeyNotFoundError(err) {
-		return false, false, false, err
+	const kvStoreKey = "com.apple.developer.ubiquity-kvstore-identifier"
+	v, ok := serialized.Object(e).String(kvStoreKey)
+	if !ok && serialized.Object(e).Has(kvStoreKey) {
+		return false, false, false, fmt.Errorf("entitlement %s is not a string", kvStoreKey)
 	}
 	keyValueStorage = v != ""
 
-	iCloudServices, err := serialized.Object(e).StringSlice("com.apple.developer.icloud-services")
-	if err != nil && !serialized.IsKeyNotFoundError(err) {
-		return false, false, false, err
+	const iCloudServicesKey = "com.apple.developer.icloud-services"
+	iCloudServices, ok := serialized.Object(e).StringSlice(iCloudServicesKey)
+	if !ok && serialized.Object(e).Has(iCloudServicesKey) {
+		return false, false, false, fmt.Errorf("entitlement %s is not a string array", iCloudServicesKey)
 	}
 
 	if len(iCloudServices) > 0 {
-		iCloudDocuments = sliceutil.IsStringInSlice("CloudDocuments", iCloudServices)
-		iCloudKit = sliceutil.IsStringInSlice("CloudKit", iCloudServices)
+		iCloudDocuments = slices.Contains(iCloudServices, "CloudDocuments")
+		iCloudKit = slices.Contains(iCloudServices, "CloudKit")
 	}
 	return
 }
@@ -186,7 +194,7 @@ func (e Entitlements) iCloudServices() (iCloudDocuments, iCloudKit, keyValueStor
 // ICloudContainers returns the list of iCloud containers
 func (e Entitlements) ICloudContainers() ([]string, error) {
 	usesDocuments, usesCloudKit, _, err := e.iCloudServices()
-	if err != nil && !serialized.IsKeyNotFoundError(err) {
+	if err != nil {
 		return nil, err
 	}
 
@@ -194,9 +202,9 @@ func (e Entitlements) ICloudContainers() ([]string, error) {
 		return nil, nil
 	}
 
-	containers, err := serialized.Object(e).StringSlice(ICloudIdentifiersEntitlementKey)
-	if err != nil && !serialized.IsKeyNotFoundError(err) {
-		return nil, err
+	containers, ok := serialized.Object(e).StringSlice(ICloudIdentifiersEntitlementKey)
+	if !ok && serialized.Object(e).Has(ICloudIdentifiersEntitlementKey) {
+		return nil, fmt.Errorf("entitlement %s is not a string array", ICloudIdentifiersEntitlementKey)
 	}
 	return containers, nil
 }

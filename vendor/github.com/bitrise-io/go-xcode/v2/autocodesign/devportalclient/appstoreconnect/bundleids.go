@@ -2,24 +2,54 @@ package appstoreconnect
 
 import (
 	"net/http"
-	"strings"
 )
 
 // BundleIDsEndpoint ...
 const BundleIDsEndpoint = "bundleIds"
 
+// ListBundleIDsSortOption ...
+type ListBundleIDsSortOption string
+
+// ListBundleIDsSortOptions ...
+const (
+	ListBundleIDsSortOptionName           ListBundleIDsSortOption = "name"
+	ListBundleIDsSortOptionNameDesc       ListBundleIDsSortOption = "-name"
+	ListBundleIDsSortOptionPlatform       ListBundleIDsSortOption = "platform"
+	ListBundleIDsSortOptionPlatformDesc   ListBundleIDsSortOption = "-platform"
+	ListBundleIDsSortOptionIdentifier     ListBundleIDsSortOption = "identifier"
+	ListBundleIDsSortOptionIdentifierDesc ListBundleIDsSortOption = "-identifier"
+	ListBundleIDsSortOptionSeedId         ListBundleIDsSortOption = "seedId"
+	ListBundleIDsSortOptionSeedIdDesc     ListBundleIDsSortOption = "-seedId"
+	ListBundleIDsSortOptionID             ListBundleIDsSortOption = "id"
+	ListBundleIDsSortOptionIDDesc         ListBundleIDsSortOption = "-id"
+)
+
 // ListBundleIDsOptions ...
 type ListBundleIDsOptions struct {
 	PagingOptions
-	FilterIdentifier string           `url:"filter[identifier],omitempty"`
-	FilterName       string           `url:"filter[name],omitempty"`
-	FilterPlatform   BundleIDPlatform `url:"filter[platform],omitempty"`
-	Include          string           `url:"include,omitempty"`
+	FilterIdentifier string                  `url:"filter[identifier],omitempty"`
+	FilterName       string                  `url:"filter[name],omitempty"`
+	FilterPlatform   BundleIDPlatform        `url:"filter[platform],omitempty"`
+	Include          string                  `url:"include,omitempty"`
+	Sort             ListBundleIDsSortOption `url:"sort,omitempty"`
+}
+
+// PagingInformationPaging ...
+type PagingInformationPaging struct {
+	Total int `json:"total,omitempty"`
+	Limit int `json:"limit,omitempty"`
+}
+
+// PagingInformation ...
+type PagingInformation struct {
+	Paging PagingInformationPaging `json:"paging,omitempty"`
 }
 
 // PagedDocumentLinks ...
 type PagedDocumentLinks struct {
-	Next string `json:"next,omitempty"`
+	First string `json:"first,omitempty"`
+	Next  string `json:"next,omitempty"`
+	Self  string `json:"self,omitempty"`
 }
 
 // BundleIDAttributes ...
@@ -59,6 +89,7 @@ type BundleID struct {
 type BundleIdsResponse struct {
 	Data  []BundleID         `json:"data,omitempty"`
 	Links PagedDocumentLinks `json:"links,omitempty"`
+	Meta  PagingInformation  `json:"meta,omitempty"`
 }
 
 // ListBundleIDs ...
@@ -125,8 +156,7 @@ func (s ProvisioningService) CreateBundleID(body BundleIDCreateRequest) (*Bundle
 
 // BundleID ...
 func (s ProvisioningService) BundleID(relationshipLink string) (*BundleIDResponse, error) {
-	endpoint := strings.TrimPrefix(relationshipLink, baseURL+apiVersion)
-	req, err := s.client.NewRequest(http.MethodGet, endpoint, nil)
+	req, err := s.client.NewRequestWithRelationshipURL(http.MethodGet, relationshipLink, nil)
 	if err != nil {
 		return nil, err
 	}

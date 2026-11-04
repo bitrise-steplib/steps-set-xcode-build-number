@@ -2,18 +2,35 @@ package appstoreconnect
 
 import (
 	"net/http"
-	"strings"
 )
 
 // DevicesEndpoint ...
 const DevicesEndpoint = "devices"
 
+// ListDevicesSortOption ...
+type ListDevicesSortOption string
+
+// ListDevicesSortOptions ...
+const (
+	ListDevicesSortOptionName         ListDevicesSortOption = "name"
+	ListDevicesSortOptionNameDesc     ListDevicesSortOption = "-name"
+	ListDevicesSortOptionPlatform     ListDevicesSortOption = "platform"
+	ListDevicesSortOptionPlatformDesc ListDevicesSortOption = "-platform"
+	ListDevicesSortOptionUDID         ListDevicesSortOption = "udid"
+	ListDevicesSortOptionUDIDDesc     ListDevicesSortOption = "-udid"
+	ListDevicesSortOptionStatus       ListDevicesSortOption = "status"
+	ListDevicesSortOptionStatusDesc   ListDevicesSortOption = "-status"
+	ListDevicesSortOptionID           ListDevicesSortOption = "id"
+	ListDevicesSortOptionIDDesc       ListDevicesSortOption = "-id"
+)
+
 // ListDevicesOptions ...
 type ListDevicesOptions struct {
 	PagingOptions
-	FilterUDID     string         `url:"filter[udid],omitempty"`
-	FilterPlatform DevicePlatform `url:"filter[platform],omitempty"`
-	FilterStatus   Status         `url:"filter[status],omitempty"`
+	FilterUDID     string                `url:"filter[udid],omitempty"`
+	FilterPlatform DevicePlatform        `url:"filter[platform],omitempty"`
+	FilterStatus   Status                `url:"filter[status],omitempty"`
+	Sort           ListDevicesSortOption `url:"sort,omitempty"`
 }
 
 // DeviceClass ...
@@ -69,6 +86,7 @@ type Device struct {
 type DevicesResponse struct {
 	Data  []Device           `json:"data"`
 	Links PagedDocumentLinks `json:"links,omitempty"`
+	Meta  PagingInformation  `json:"meta,omitempty"`
 }
 
 // DeviceResponse ...
@@ -145,8 +163,7 @@ func (s ProvisioningService) Devices(relationshipLink string, opt *PagingOptions
 		return nil, err
 	}
 
-	endpoint := strings.TrimPrefix(u, baseURL+apiVersion)
-	req, err := s.client.NewRequest(http.MethodGet, endpoint, nil)
+	req, err := s.client.NewRequestWithRelationshipURL(http.MethodGet, u, nil)
 	if err != nil {
 		return nil, err
 	}

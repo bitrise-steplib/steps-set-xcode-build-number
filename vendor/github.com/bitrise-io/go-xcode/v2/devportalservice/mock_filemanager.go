@@ -1,0 +1,86 @@
+package devportalservice
+
+import (
+	"io"
+	"io/fs"
+	"os"
+	"strings"
+
+	"github.com/bitrise-io/go-utils/v2/fileutil"
+)
+
+type mockFileReader struct {
+	contents string
+}
+
+func newMockFileReader(contents string) fileutil.FileManager {
+	return &mockFileReader{
+		contents: contents,
+	}
+}
+
+// Open ...
+func (r *mockFileReader) Open(path string) (*os.File, error) {
+	panic("not implemented")
+}
+
+// OpenReaderIfExists ...
+func (r *mockFileReader) OpenReaderIfExists(path string) (io.Reader, error) {
+	return io.NopCloser(strings.NewReader(r.contents)), nil
+}
+
+// ReadDirEntryNames ...
+func (r *mockFileReader) ReadDirEntryNames(path string) ([]string, error) {
+	panic("not implemented")
+}
+
+// Remove ...
+func (r *mockFileReader) Remove(path string) error {
+	panic("not implemented")
+}
+
+// RemoveAll ...
+func (r *mockFileReader) RemoveAll(path string) error {
+	panic("not implemented")
+}
+
+// Write ...
+func (r *mockFileReader) Write(path string, value string, perm os.FileMode) error {
+	panic("not implemented")
+}
+
+// WriteBytes ...
+func (r *mockFileReader) WriteBytes(path string, value []byte) error {
+	panic("not implemented")
+}
+
+// FileSizeInBytes ...
+func (r *mockFileReader) FileSizeInBytes(pth string) (int64, error) {
+	panic("not implemented")
+}
+
+// CopyFile stub...
+func (r *mockFileReader) CopyFile(src, dst string, opts *fileutil.CopyOptions) error {
+	panic("implement me")
+}
+
+// CopyFileFS stub...
+func (r *mockFileReader) CopyFileFS(fsys fs.FS, src, dst string, opts *fileutil.CopyOptions) error {
+	panic("implement me")
+}
+
+// CopyDir stub...
+func (r *mockFileReader) CopyDir(src, dst string, opts *fileutil.CopyOptions) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+// Lstat stub...
+func (r *mockFileReader) Lstat(path string) (os.FileInfo, error) {
+	panic("implement me")
+}
+
+// LastNLines stub...
+func (r *mockFileReader) LastNLines(s string, n int) string {
+	panic("implement me")
+}
