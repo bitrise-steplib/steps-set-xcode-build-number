@@ -95,6 +95,54 @@ workflows:
     after_run:
     - _set-build-and-assert
 
+  test_json_project_format:
+    description: Only Xcode 27.2 and newer can read a project in the JSON project.xcproj format.
+    steps:
+    - script:
+        title: Check if the current Xcode supports the JSON project format
+        inputs:
+        - content: |-
+            #!/bin/env bash
+            set -e
+            version=$(xcodebuild -version | head -n 1 | awk '{print $2}')
+            if printf '27.2\n%s\n' "$version" | sort -V -C; then
+              envman add --key RUN_JSON_PROJECT_FORMAT_TEST --value true
+            else
+              echo "Xcode $version does not support the JSON project format, skipping"
+            fi
+    - bitrise-run:
+        run_if: |-
+          {{ enveq "RUN_JSON_PROJECT_FORMAT_TEST" "true" }}
+        inputs:
+        - workflow_id: utility_test_json_project_format
+        - bitrise_config_path: ./e2e/bitrise.yml
+
+  utility_test_json_project_format:
+    envs:
+    - STEP_PATH: ./_tmp/sample-apps-ios-json-xcproj.xcodeproj
+    - STEP_NAME: sample-apps-ios-json-xcproj
+    - STEP_TYPE: project
+    - STEP_BUILD_ROOT: ./_tmp
+    - BUILD_VERSION: 9994
+    - VERSION_OFFSET: 5
+    - EXPECTED_BUILD_VERSION: 9999
+    steps:
+    - script:
+        title: Remove temp folder
+        inputs:
+        - content: |
+            #!/bin/bash
+            set -ex
+
+            rm -rf ./_tmp
+    - git::https://github.com/bitrise-steplib/bitrise-step-simple-git-clone.git@master:
+        inputs:
+        - repository_url: https://github.com/bitrise-io/sample-apps-ios-json-xcproj.git
+        - branch: bitfall-signing
+        - clone_into_dir: ./_tmp
+    after_run:
+    - _set-build-and-assert
+
   _set-build-and-assert:
     steps:
     - script:
