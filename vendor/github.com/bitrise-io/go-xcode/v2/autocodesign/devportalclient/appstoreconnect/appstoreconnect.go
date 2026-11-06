@@ -7,24 +7,30 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/bitrise-io/go-utils/httputil"
-	"github.com/bitrise-io/go-utils/log"
-	"github.com/bitrise-io/go-utils/retry"
+	"github.com/bitrise-io/go-utils/v2/log"
+	"github.com/bitrise-io/go-utils/v2/retryhttp"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/go-querystring/query"
 	"github.com/hashicorp/go-retryablehttp"
 )
 
 const (
-	baseURL    = "https://api.appstoreconnect.apple.com/"
+	clientBaseURL = "https://api.appstoreconnect.apple.com/"
+	tokenAudience = "appstoreconnect-v1"
+
+	clientBaseEnterpiseURL  = "https://api.enterprise.developer.apple.com/"
+	tokenEnterpriseAudience = "apple-developer-enterprise-v1"
+
 	apiVersion = "v1"
 )
 
@@ -32,9 +38,8 @@ var (
 	// A given token can be reused for up to 20 minutes:
 	// https://developer.apple.com/documentation/appstoreconnectapi/generating_tokens_for_api_requests
 	//
-	// Using 19 minutes to make sure time inaccuracies at token validation does not cause issues.
-	jwtDuration    = 19 * time.Minute
-	jwtReserveTime = 2 * time.Minute
+	// We use 18 minutes to make sure time inaccuracies at token validation does not cause issues.
+	jwtDuration = 18 * time.Minute
 )
 
 // HTTPClient ...
@@ -53,6 +58,7 @@ type Client struct {
 	keyID             string
 	issuerID          string
 	privateKeyContent []byte
+	audience          string
 
 	token       *jwt.Token
 	signedToken string
@@ -62,30 +68,86 @@ type Client struct {
 
 	common       service // Reuse a single struct instead of allocating one for each service on the heap.
 	Provisioning *ProvisioningService
+
+	logger  log.Logger
+	tracker Tracker
 }
 
 // NewRetryableHTTPClient create a new http client with retry settings.
-func NewRetryableHTTPClient() *http.Client {
-	client := retry.NewHTTPClient()
+func NewRetryableHTTPClient(logger log.Logger, tracker Tracker) *http.Client {
+	client := retryhttp.NewClient(logger)
+
+	trackingTransport := newTrackingRoundTripper(client.HTTPClient.Transport, tracker)
+	client.HTTPClient.Transport = trackingTransport
+
+	// RequestLogHook is called before each retry (attemptNum > 0 for retries, 0 for initial request).
+	// We mark retry attempts in the request context so RoundTrip can track which attempts are retries.
+	// We use pointer dereference (*req = *...) to modify the request in-place because RequestLogHook
+	// doesn't return a value - it modifies the request through side effects. This updates the request's
+	// context field, which will be present when RoundTrip is called immediately after.
+	client.RequestLogHook = func(_ retryablehttp.Logger, req *http.Request, attemptNum int) {
+		if attemptNum > 0 {
+			*req = *trackingTransport.markAsRetry(req)
+		}
+	}
+
 	client.CheckRetry = func(ctx context.Context, resp *http.Response, err error) (bool, error) {
 		if resp != nil && resp.StatusCode == http.StatusUnauthorized {
-			log.Debugf("Received HTTP 401 (Unauthorized), retrying request...")
+			logger.Debugf("Received HTTP 401 (Unauthorized), retrying request...")
+			return true, nil
+		}
+
+		if resp != nil && resp.StatusCode == http.StatusForbidden {
+			var apiError *ErrorResponse
+			respErr := checkResponse(logger, resp)
+			if ok := errors.As(respErr, &apiError); ok {
+				if apiError.IsRequiredAgreementMissingOrExpired() {
+					logger.Warnf("Received error FORBIDDEN.REQUIRED_AGREEMENTS_MISSING_OR_EXPIRED (status 403), retrying request...")
+					return true, nil
+				}
+			}
+			// return error, otherwise response will be read twice and appear empty
+			return false, respErr
+		}
+
+		if resp != nil && resp.StatusCode == http.StatusTooManyRequests {
+			message := "Received HTTP 429 Too Many Requests"
+			if rateLimit := resp.Header.Get("X-Rate-Limit"); rateLimit != "" {
+				message += " (" + rateLimit + ")"
+			}
+
+			if retryAfter := resp.Header.Get("Retry-After"); retryAfter != "" {
+				message += ", retrying the request in " + retryAfter + " seconds..."
+			} else {
+				message += ", retrying the request..."
+			}
+
+			logger.Warnf(message)
+
 			return true, nil
 		}
 
 		shouldRetry, err := retryablehttp.DefaultRetryPolicy(ctx, resp, err)
 		if shouldRetry && resp != nil {
-			log.Debugf("Retry network error: %d", resp.StatusCode)
+			logger.Debugf("Retry network error: %d", resp.StatusCode)
 		}
 
 		return shouldRetry, err
 	}
+
 	return client.StandardClient()
 }
 
 // NewClient creates a new client
-func NewClient(httpClient HTTPClient, keyID, issuerID string, privateKey []byte) *Client {
-	baseURL, err := url.Parse(baseURL)
+func NewClient(httpClient HTTPClient, keyID, issuerID string, privateKey []byte, isEnterpise bool, logger log.Logger, tracker Tracker) *Client {
+	targetURL := clientBaseURL
+	targetAudience := tokenAudience
+	if isEnterpise {
+		targetURL = clientBaseEnterpiseURL
+		targetAudience = tokenEnterpriseAudience
+	}
+
+	baseURL, err := url.Parse(targetURL)
 	if err != nil {
 		panic("invalid api base url: " + err.Error())
 	}
@@ -94,9 +156,12 @@ func NewClient(httpClient HTTPClient, keyID, issuerID string, privateKey []byte)
 		keyID:             keyID,
 		issuerID:          issuerID,
 		privateKeyContent: privateKey,
+		audience:          targetAudience,
 
 		client:  httpClient,
 		BaseURL: baseURL,
+		logger:  logger,
+		tracker: tracker,
 	}
 	c.common.client = c
 	c.Provisioning = (*ProvisioningService)(&c.common)
@@ -104,40 +169,50 @@ func NewClient(httpClient HTTPClient, keyID, issuerID string, privateKey []byte)
 	return c
 }
 
+// Tracker exposes the underlying analytics tracker so packages built on top
+// of this client can emit domain-specific events (e.g. unknown entitlements).
+func (c *Client) Tracker() Tracker {
+	return c.tracker
+}
+
 // ensureSignedToken makes sure that the JWT auth token is not expired
 // and return a signed key
 func (c *Client) ensureSignedToken() (string, error) {
 	if c.token != nil {
-		claim, ok := c.token.Claims.(claims)
-		if !ok {
-			return "", fmt.Errorf("failed to cast claim for token")
-		}
-		expiration := time.Unix(int64(claim.Expiration), 0)
-
-		// A given token can be reused for up to 20 minutes:
-		// https://developer.apple.com/documentation/appstoreconnectapi/generating_tokens_for_api_requests
-		//
-		// The step generates a new token 2 minutes before the expiry.
-		if time.Until(expiration) > jwtReserveTime {
+		err := c.token.Claims.Valid()
+		if err == nil {
 			return c.signedToken, nil
 		}
 
-		log.Debugf("JWT token expired, regenerating")
+		c.logger.Debugf("JWT token is invalid: %s, regenerating...", err)
 	} else {
-		log.Debugf("Generating JWT token")
+		c.logger.Debugf("Generating JWT token")
 	}
 
-	c.token = createToken(c.keyID, c.issuerID)
+	c.token = createToken(c.keyID, c.issuerID, c.audience)
 	var err error
 	if c.signedToken, err = signToken(c.token, c.privateKeyContent); err != nil {
+		c.tracker.TrackAuthError(fmt.Sprintf("JWT signing: %s", err.Error()))
 		return "", err
 	}
 	return c.signedToken, nil
 }
 
+// NewRequestWithRelationshipURL ...
+func (c *Client) NewRequestWithRelationshipURL(method, endpoint string, body interface{}) (*http.Request, error) {
+	endpoint = strings.TrimPrefix(endpoint, c.BaseURL.String()+apiVersion+"/")
+
+	return c.NewRequest(method, endpoint, body)
+}
+
 // NewRequest creates a new http.Request
 func (c *Client) NewRequest(method, endpoint string, body interface{}) (*http.Request, error) {
 	endpoint = apiVersion + "/" + endpoint
+
+	return c.newRequest(method, endpoint, body)
+}
+
+func (c *Client) newRequest(method, endpoint string, body interface{}) (*http.Request, error) {
 	u, err := c.BaseURL.Parse(endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("parsing endpoint failed: %v", err)
@@ -173,16 +248,16 @@ func (c *Client) NewRequest(method, endpoint string, body interface{}) (*http.Re
 	return req, nil
 }
 
-func checkResponse(r *http.Response) error {
+func checkResponse(logger log.Logger, r *http.Response) error {
 	if r.StatusCode >= 200 && r.StatusCode <= 299 {
 		return nil
 	}
 
 	errorResponse := &ErrorResponse{Response: r}
-	data, err := ioutil.ReadAll(r.Body)
+	data, err := io.ReadAll(r.Body)
 	if err == nil && data != nil {
 		if err := json.Unmarshal(data, errorResponse); err != nil {
-			log.Errorf("Failed to unmarshal response (%s): %s", string(data), err)
+			logger.Errorf("Failed to unmarshal response (%s): %s", string(data), err)
 		}
 	}
 	return errorResponse
@@ -191,7 +266,7 @@ func checkResponse(r *http.Response) error {
 // Debugf ...
 func (c *Client) Debugf(format string, v ...interface{}) {
 	if c.EnableDebugLogs {
-		log.Debugf(format, v...)
+		c.logger.Debugf(format, v...)
 	}
 }
 
@@ -214,15 +289,18 @@ func (c *Client) Do(req *http.Request, v interface{}) (*http.Response, error) {
 	}
 
 	if err != nil {
+		c.tracker.TrackAPIError(req.Method, req.URL.Host, req.URL.Path, 0, err.Error())
 		return nil, err
 	}
+
 	defer func() {
 		if cerr := resp.Body.Close(); cerr != nil {
-			log.Warnf("Failed to close response body: %s", cerr)
+			c.logger.Warnf("Failed to close response body: %s", cerr)
 		}
 	}()
 
-	if err := checkResponse(resp); err != nil {
+	if err := checkResponse(c.logger, resp); err != nil {
+		c.tracker.TrackAPIError(req.Method, req.URL.Host, req.URL.Path, resp.StatusCode, err.Error())
 		return resp, err
 	}
 

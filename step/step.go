@@ -12,10 +12,11 @@ import (
 	"github.com/bitrise-io/go-utils/pathutil"
 	"github.com/bitrise-io/go-utils/v2/command"
 	"github.com/bitrise-io/go-utils/v2/env"
+	"github.com/bitrise-io/go-utils/v2/fileutil"
 	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/projectmanager"
-	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
-	"github.com/bitrise-io/go-xcode/xcodeproject/xcodeproj"
+	"github.com/bitrise-io/go-xcode/v2/plistutil"
+	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcodeproj"
 )
 
 const (
@@ -61,7 +62,7 @@ func (u Updater) ProcessConfig() (Config, error) {
 }
 
 func (u Updater) Run(config Config) (Result, error) {
-	helper, err := projectmanager.NewProjectHelper(config.ProjectPath, config.Scheme, config.Configuration)
+	helper, err := projectmanager.NewProjectHelper(config.ProjectPath, u.logger, config.Scheme, projectmanager.BuildActionArchive, config.Configuration, nil, false)
 	if err != nil {
 		return Result{}, err
 	}
@@ -107,9 +108,9 @@ func generatesInfoPlist(helper *projectmanager.ProjectHelper, targetName, config
 		return false, err
 	}
 
-	generatesInfoPlist := buildConfig.BuildSettings["GENERATE_INFOPLIST_FILE"] == "YES"
+	generateInfoPlistFile, _ := buildConfig.BuildSetting("GENERATE_INFOPLIST_FILE")
 
-	return generatesInfoPlist, err
+	return generateInfoPlistFile == "YES", nil
 }
 
 func incrementBuildVersion(logger log.Logger, buildVersion string, offset int64) (string, error) {
@@ -136,26 +137,27 @@ func (u Updater) updateVersionNumbersInProject(helper *projectmanager.ProjectHel
 		targetName = helper.MainTarget.Name
 	}
 
-	for _, target := range helper.XcProj.Proj.Targets {
-		if target.Name != targetName {
-			continue
-		}
-
-		for _, buildConfig := range target.BuildConfigurationList.BuildConfigurations {
+	target, ok := helper.XcProj.TargetByName(targetName)
+	if ok {
+		for _, buildConfig := range target.BuildConfigurations {
 			if configuration != "" && buildConfig.Name != configuration {
 				continue
 			}
 
 			u.logger.Printf("Updating build settings for the %s target", target.Name)
 
-			oldProjectVersion := buildConfig.BuildSettings["CURRENT_PROJECT_VERSION"]
-			buildConfig.BuildSettings["CURRENT_PROJECT_VERSION"] = bundleVersion
+			oldProjectVersion, _ := buildConfig.BuildSetting("CURRENT_PROJECT_VERSION")
+			if err := helper.XcProj.SetBuildSetting(target.Name, buildConfig.Name, "CURRENT_PROJECT_VERSION", bundleVersion); err != nil {
+				return err
+			}
 
 			u.logger.Debugf("CURRENT_PROJECT_VERSION %s -> %s", oldProjectVersion, bundleVersion)
 
 			if shortVersion != "" {
-				oldMarketingVersion := buildConfig.BuildSettings["MARKETING_VERSION"]
-				buildConfig.BuildSettings["MARKETING_VERSION"] = shortVersion
+				oldMarketingVersion, _ := buildConfig.BuildSetting("MARKETING_VERSION")
+				if err := helper.XcProj.SetBuildSetting(target.Name, buildConfig.Name, "MARKETING_VERSION", shortVersion); err != nil {
+					return err
+				}
 
 				u.logger.Debugf("MARKETING_VERSION %s -> %s", oldMarketingVersion, shortVersion)
 			}
@@ -176,18 +178,14 @@ func (u Updater) updateVersionNumbersInInfoPlist(helper *projectmanager.ProjectH
 		return err
 	}
 
-	infoPlistPath, err := buildConfig.BuildSettings.String(infoPlistFileKey)
+	infoPlistPath, ok := buildConfig.BuildSetting(infoPlistFileKey)
 	// If the path is extracted into a xcconfig file, then it will not appear here in the build settings.
 	// We need to use xcodebuild to resolve the path.
-	if err != nil {
-		if !serialized.IsKeyNotFoundError(err) {
-			return err
-		}
-
+	if !ok {
 		u.logger.Printf("Info.plist path was not found in the project\n")
 		u.logger.Printf("Using xcodebuild to resolve it\n")
 
-		infoPlistPath, err = extractInfoPlistPathWithXcodebuild(helper.XcProj.Path, schemeName, targetName, configuration)
+		infoPlistPath, err = extractInfoPlistPathWithXcodebuild(helper.XcProj.Path(), schemeName, targetName, configuration)
 		if err != nil {
 			return err
 		}
@@ -206,19 +204,20 @@ func (u Updater) updateVersionNumbersInInfoPlist(helper *projectmanager.ProjectH
 		u.logger.Printf("Info.plist path contains env var: %s\n", infoPlistPath)
 		u.logger.Printf("Using xcodebuild to resolve it\n")
 
-		infoPlistPath, err = extractInfoPlistPathWithXcodebuild(helper.XcProj.Path, schemeName, targetName, configuration)
+		infoPlistPath, err = extractInfoPlistPathWithXcodebuild(helper.XcProj.Path(), schemeName, targetName, configuration)
 		if err != nil {
 			return err
 		}
 	}
 
 	if pathutil.IsRelativePath(infoPlistPath) {
-		infoPlistPath = filepath.Join(filepath.Dir(helper.XcProj.Path), infoPlistPath)
+		infoPlistPath = filepath.Join(filepath.Dir(helper.XcProj.Path()), infoPlistPath)
 	}
 
 	u.logger.Printf("Updating Info.plist at %s", infoPlistPath)
 
-	infoPlist, format, err := xcodeproj.ReadPlistFile(infoPlistPath)
+	plistHandler := plistutil.NewFileHandler(fileutil.NewFileManager())
+	infoPlist, format, err := plistHandler.Read(infoPlistPath)
 	if err != nil {
 		return err
 	}
@@ -235,7 +234,7 @@ func (u Updater) updateVersionNumbersInInfoPlist(helper *projectmanager.ProjectH
 		u.logger.Debugf("CFBundleShortVersionString %s -> %s", oldVersionString, shortVersion)
 	}
 
-	err = xcodeproj.WritePlistFile(infoPlistPath, infoPlist, format)
+	err = plistHandler.Write(infoPlistPath, infoPlist, format)
 	if err != nil {
 		return err
 	}
@@ -304,23 +303,16 @@ func buildConfiguration(helper *projectmanager.ProjectHelper, targetName, config
 	}
 
 	if configuration == "" {
-		configuration = helper.MainTarget.BuildConfigurationList.DefaultConfigurationName
+		configuration = helper.MainTarget.DefaultConfigurationName
 	}
 
-	var xcodeprojTarget *xcodeproj.Target
-	for _, target := range helper.XcProj.Proj.Targets {
-		if target.Name == targetName {
-			xcodeprojTarget = &target
-			break
-		}
-	}
-
-	if xcodeprojTarget == nil {
-		return nil, fmt.Errorf("target '%s' not found in project: %s", targetName, helper.XcProj.Path)
+	xcodeprojTarget, ok := helper.XcProj.TargetByName(targetName)
+	if !ok {
+		return nil, fmt.Errorf("target '%s' not found in project: %s", targetName, helper.XcProj.Path())
 	}
 
 	var xcodeprojBuildConfiguration *xcodeproj.BuildConfiguration
-	for _, buildConfig := range xcodeprojTarget.BuildConfigurationList.BuildConfigurations {
+	for _, buildConfig := range xcodeprojTarget.BuildConfigurations {
 		if buildConfig.Name == configuration {
 			xcodeprojBuildConfiguration = &buildConfig
 			break
@@ -328,7 +320,7 @@ func buildConfiguration(helper *projectmanager.ProjectHelper, targetName, config
 	}
 
 	if xcodeprojBuildConfiguration == nil {
-		return nil, fmt.Errorf("build configuration '%s' not found for target '%s' in project: %s", configuration, targetName, helper.XcProj.Path)
+		return nil, fmt.Errorf("build configuration '%s' not found for target '%s' in project: %s", configuration, targetName, helper.XcProj.Path())
 	}
 
 	return xcodeprojBuildConfiguration, nil

@@ -3,6 +3,7 @@ package appstoreconnect
 import (
 	"fmt"
 	"net/http"
+	"strings"
 )
 
 // ErrorResponseError ...
@@ -35,6 +36,33 @@ func (r ErrorResponse) Error() string {
 	}
 
 	return m
+}
+
+// IsCursorInvalid ...
+func (r ErrorResponse) IsCursorInvalid() bool {
+	// {"errors"=>[{"id"=>"[ ... ]", "status"=>"400", "code"=>"PARAMETER_ERROR.INVALID", "title"=>"A parameter has an invalid value", "detail"=>"'eyJvZmZzZXQiOiIyMCJ9' is not a valid cursor for this request", "source"=>{"parameter"=>"cursor"}}]}
+	for _, err := range r.Errors {
+		if err.Code == "PARAMETER_ERROR.INVALID" && strings.Contains(err.Detail, "is not a valid cursor for this request") {
+			return true
+		}
+	}
+	return false
+}
+
+// IsRequiredAgreementMissingOrExpired ...
+func (r ErrorResponse) IsRequiredAgreementMissingOrExpired() bool {
+	// status code: 403
+	// code: FORBIDDEN.REQUIRED_AGREEMENTS_MISSING_OR_EXPIRED
+	// title: A required agreement is missing or has expired.
+	// detail: This request requires an in-effect agreement that has not been signed or has expired.
+
+	for _, err := range r.Errors {
+		if err.Code == "FORBIDDEN.REQUIRED_AGREEMENTS_MISSING_OR_EXPIRED" {
+			return true
+		}
+	}
+
+	return false
 }
 
 // DeviceRegistrationError ...

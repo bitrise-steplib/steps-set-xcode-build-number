@@ -9,7 +9,10 @@ import (
 	"github.com/bitrise-io/go-utils/v2/command"
 	"github.com/bitrise-io/go-utils/v2/env"
 	. "github.com/bitrise-io/go-utils/v2/exitcode"
+	"github.com/bitrise-io/go-utils/v2/fileutil"
 	"github.com/bitrise-io/go-utils/v2/log"
+	"github.com/bitrise-io/go-utils/v2/pathutil"
+	"github.com/bitrise-io/go-utils/v2/ziputil"
 	"github.com/bitrise-steplib/steps-set-xcode-build-number/step"
 )
 
@@ -45,7 +48,7 @@ func run() ExitCode {
 func createUpdater(logger log.Logger) step.Updater {
 	envRepository := stepenv.NewRepository(env.NewRepository())
 	inputParser := stepconf.NewInputParser(envRepository)
-	exporter := export.NewExporter(command.NewFactory(envRepository))
+	exporter := export.NewExporter(command.NewFactory(envRepository), fileutil.NewFileManager(), ziputil.NewZipManager(pathutil.NewPathChecker()))
 
 	return step.NewUpdater(inputParser, exporter, logger)
 }

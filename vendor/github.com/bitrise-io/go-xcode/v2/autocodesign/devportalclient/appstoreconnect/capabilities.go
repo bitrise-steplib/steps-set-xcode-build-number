@@ -2,7 +2,6 @@ package appstoreconnect
 
 import (
 	"net/http"
-	"strings"
 )
 
 // BundleIDCapabilitiesEndpoint ...
@@ -80,9 +79,13 @@ var ServiceTypeByKey = map[string]CapabilityType{
 	"com.apple.developer.ClassKit-environment":                                 Classkit,
 	"com.apple.developer.coremedia.hls.low-latency":                            CoremediaHLSLowLatency,
 	// does not appear on developer portal
-	"com.apple.developer.icloud-container-identifiers":   Ignored,
-	"com.apple.developer.ubiquity-container-identifiers": Ignored,
-	ParentApplicationIdentifierEntitlementKey:            Ignored,
+	"com.apple.developer.icloud-container-identifiers":                   Ignored,
+	"com.apple.developer.ubiquity-container-identifiers":                 Ignored,
+	"com.apple.developer.healthkit.access":                               Ignored,
+	"com.apple.developer.kernel.extended-virtual-addressing":             Ignored,
+	"com.apple.developer.kernel.increased-memory-limit":                  Ignored,
+	"com.apple.developer.authentication-services.credential-provider-ui": Ignored,
+	ParentApplicationIdentifierEntitlementKey:                            Ignored,
 	// These are entitlements not supported via the API and this step,
 	// profile needs to be manually generated on Apple Developer Portal.
 	"com.apple.developer.contacts.notes":         ProfileAttachedEntitlement,
@@ -262,8 +265,7 @@ func (s ProvisioningService) UpdateCapability(id string, body BundleIDCapability
 
 // Capabilities ...
 func (s ProvisioningService) Capabilities(relationshipLink string) (*BundleIDCapabilitiesResponse, error) {
-	endpoint := strings.TrimPrefix(relationshipLink, baseURL+apiVersion)
-	req, err := s.client.NewRequest(http.MethodGet, endpoint, nil)
+	req, err := s.client.NewRequestWithRelationshipURL(http.MethodGet, relationshipLink, nil)
 	if err != nil {
 		return nil, err
 	}

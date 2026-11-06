@@ -9,12 +9,13 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/bitrise-io/go-utils/log"
+	"github.com/bitrise-io/go-utils/v2/log"
+	"github.com/bitrise-io/go-utils/v2/retry"
 	"github.com/bitrise-io/go-xcode/certificateutil"
-	"github.com/bitrise-io/go-xcode/devportalservice"
-	"github.com/bitrise-io/go-xcode/profileutil"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/appstoreconnect"
-	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
+	"github.com/bitrise-io/go-xcode/v2/devportalservice"
+	"github.com/bitrise-io/go-xcode/v2/profileutil"
+	"github.com/bitrise-io/go-xcode/v2/xcodeproject/serialized"
 )
 
 // Profile represents a provisioning profiles
@@ -22,7 +23,7 @@ type Profile interface {
 	ID() string
 	Attributes() appstoreconnect.ProfileAttributes
 	CertificateIDs() ([]string, error)
-	DeviceIDs() ([]string, error)
+	DeviceUDIDs() ([]string, error)
 	BundleID() (appstoreconnect.BundleID, error)
 	Entitlements() (Entitlements, error)
 }
@@ -67,8 +68,16 @@ type Certificate struct {
 	ID              string
 }
 
+// DeviceIDs is the opaque ID of a device (from used in the Developer Portal API)
+type DeviceIDs []string
+
+// DeviceUDIDs are used in the provisioning profiles, as unique device identifiers
+type DeviceUDIDs []string
+
 // DevPortalClient abstract away the Apple Developer Portal API
 type DevPortalClient interface {
+	Login() error
+
 	QueryCertificateBySerial(serial big.Int) (Certificate, error)
 	QueryAllIOSCertificates() (map[appstoreconnect.CertificateType][]Certificate, error)
 
@@ -143,14 +152,18 @@ type codesignAssetManager struct {
 	devPortalClient           DevPortalClient
 	assetWriter               AssetWriter
 	localCodeSignAssetManager LocalCodeSignAssetManager
+	logger                    log.Logger
+	sleeper                   retry.Sleeper
 }
 
 // NewCodesignAssetManager ...
-func NewCodesignAssetManager(devPortalClient DevPortalClient, assetWriter AssetWriter, localCodeSignAssetManager LocalCodeSignAssetManager) CodesignAssetManager {
+func NewCodesignAssetManager(devPortalClient DevPortalClient, assetWriter AssetWriter, localCodeSignAssetManager LocalCodeSignAssetManager, logger log.Logger, sleeper retry.Sleeper) CodesignAssetManager {
 	return codesignAssetManager{
 		devPortalClient:           devPortalClient,
 		assetWriter:               assetWriter,
 		localCodeSignAssetManager: localCodeSignAssetManager,
+		logger:                    logger,
+		sleeper:                   sleeper,
 	}
 }
 
@@ -168,8 +181,8 @@ func (m codesignAssetManager) EnsureCodesignAssets(appLayout AppLayout, opts Cod
 		return nil, err
 	}
 
-	var devPortalDeviceIDs []string
-	var devPortalDeviceUDIDs []string
+	var devPortalDeviceIDs DeviceIDs
+	var devPortalDeviceUDIDs DeviceUDIDs
 	if DistributionTypeRequiresDeviceList(distrTypes) {
 		devPortalDevices, err := EnsureTestDevices(m.devPortalClient, opts.BitriseTestDevices, appLayout.Platform)
 		if err != nil {
@@ -193,9 +206,9 @@ func (m codesignAssetManager) EnsureCodesignAssets(appLayout AppLayout, opts Cod
 		printExistingCodesignAssets(localCodesignAssets, distrType)
 		if localCodesignAssets != nil {
 			// Did not check if selected certificate is installed yet
-			fmt.Println()
-			log.Infof("Installing certificate")
-			log.Printf("certificate: %s", localCodesignAssets.Certificate.CommonName)
+			m.logger.Println()
+			m.logger.Infof("Installing certificate")
+			m.logger.Printf("certificate: %s", localCodesignAssets.Certificate.CommonName)
 			if err := m.assetWriter.InstallCertificate(localCodesignAssets.Certificate); err != nil {
 				return nil, fmt.Errorf("failed to install certificate: %w", err)
 			}
@@ -206,23 +219,23 @@ func (m codesignAssetManager) EnsureCodesignAssets(appLayout AppLayout, opts Cod
 			printMissingCodeSignAssets(missingAppLayout)
 
 			// Ensure Profiles
-			newCodesignAssets, err := ensureProfiles(m.devPortalClient, distrType, certsByType, *missingAppLayout, devPortalDeviceIDs, opts.MinProfileValidityDays)
+			newCodesignAssets, err := ensureProfiles(m.logger, m.sleeper, m.devPortalClient, distrType, certsByType, *missingAppLayout, devPortalDeviceIDs, devPortalDeviceUDIDs, opts.MinProfileValidityDays)
 			if err != nil {
 				switch {
 				case errors.As(err, &ErrAppClipAppID{}):
-					log.Warnf("Can't create Application Identifier for App Clip targets.")
-					log.Warnf("Please generate the Application Identifier manually on Apple Developer Portal, after that the Step will continue working.")
+					m.logger.Warnf("Can't create Application Identifier for App Clip targets.")
+					m.logger.Warnf("Please generate the Application Identifier manually on Apple Developer Portal, after that the Step will continue working.")
 				case errors.As(err, &ErrAppClipAppIDWithAppleSigning{}):
-					log.Warnf("Can't manage Application Identifier for App Clip target with 'Sign In With Apple' capability.")
-					log.Warnf("Please configure Capabilities on Apple Developer Portal for App Clip target manually, after that the Step will continue working.")
+					m.logger.Warnf("Can't manage Application Identifier for App Clip target with 'Sign In With Apple' capability.")
+					m.logger.Warnf("Please configure Capabilities on Apple Developer Portal for App Clip target manually, after that the Step will continue working.")
 				}
 
 				return nil, fmt.Errorf("failed to ensure profiles: %w", err)
 			}
 
 			// Install new certificates and profiles
-			fmt.Println()
-			log.Infof("Installing certificates and profiles")
+			m.logger.Println()
+			m.logger.Infof("Installing certificates and profiles")
 			if err := m.assetWriter.Write(map[DistributionType]AppCodesignAssets{distrType: *newCodesignAssets}); err != nil {
 				return nil, fmt.Errorf("failed to install codesigning files: %w", err)
 			}

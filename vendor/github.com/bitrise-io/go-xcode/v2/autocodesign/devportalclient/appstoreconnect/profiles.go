@@ -2,10 +2,9 @@ package appstoreconnect
 
 import (
 	"net/http"
-	"strings"
 
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/time"
-	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
+	"github.com/bitrise-io/go-xcode/v2/xcodeproject/serialized"
 )
 
 // ProfilesEndpoint ...
@@ -128,6 +127,7 @@ type ProfilesResponse struct {
 		Attributes serialized.Object `json:"attributes"`
 	} `json:"included"`
 	Links PagedDocumentLinks `json:"links,omitempty"`
+	Meta  PagingInformation  `json:"meta,omitempty"`
 }
 
 // ListProfiles ...
@@ -185,7 +185,7 @@ type ProfileCreateRequestDataRelationshipsDevices struct {
 type ProfileCreateRequestDataRelationships struct {
 	BundleID     ProfileCreateRequestDataRelationshipsBundleID     `json:"bundleId"`
 	Certificates ProfileCreateRequestDataRelationshipsCertificates `json:"certificates"`
-	Devices      ProfileCreateRequestDataRelationshipsDevices      `json:"devices"`
+	Devices      *ProfileCreateRequestDataRelationshipsDevices     `json:"devices,omitempty"`
 }
 
 // ProfileCreateRequestData ...
@@ -228,7 +228,7 @@ func NewProfileCreateRequest(profileType ProfileType, name, bundleIDID string, c
 		})
 	}
 	if len(deviceData) > 0 {
-		relationships.Devices = ProfileCreateRequestDataRelationshipsDevices{Data: deviceData}
+		relationships.Devices = &ProfileCreateRequestDataRelationshipsDevices{Data: deviceData}
 	}
 
 	data := ProfileCreateRequestData{
@@ -286,8 +286,7 @@ func (s ProvisioningService) Profiles(relationshipLink string, opt *PagingOption
 		return nil, err
 	}
 
-	endpoint := strings.TrimPrefix(u, baseURL+apiVersion)
-	req, err := s.client.NewRequest(http.MethodGet, endpoint, nil)
+	req, err := s.client.NewRequestWithRelationshipURL(http.MethodGet, u, nil)
 	if err != nil {
 		return nil, err
 	}

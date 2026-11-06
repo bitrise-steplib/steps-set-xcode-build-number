@@ -7,7 +7,10 @@ import (
 	"github.com/bitrise-io/go-steputils/v2/stepconf"
 	"github.com/bitrise-io/go-utils/v2/command"
 	"github.com/bitrise-io/go-utils/v2/env"
+	"github.com/bitrise-io/go-utils/v2/fileutil"
 	"github.com/bitrise-io/go-utils/v2/log"
+	"github.com/bitrise-io/go-utils/v2/pathutil"
+	"github.com/bitrise-io/go-utils/v2/ziputil"
 	"github.com/bitrise-steplib/steps-set-xcode-build-number/step/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -21,7 +24,7 @@ func TestExport(t *testing.T) {
 	mockFactory.On("Create", "envman", arguments, (*command.Opts)(nil)).Return(testCommand())
 
 	inputParser := stepconf.NewInputParser(env.NewRepository())
-	exporter := export.NewExporter(mockFactory)
+	exporter := export.NewExporter(mockFactory, fileutil.NewFileManager(), ziputil.NewZipManager(pathutil.NewPathChecker()))
 
 	updater := NewUpdater(inputParser, exporter, log.NewLogger())
 	err := updater.Export(result)
