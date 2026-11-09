@@ -138,7 +138,7 @@ workflows:
     - git::https://github.com/bitrise-steplib/bitrise-step-simple-git-clone.git@master:
         inputs:
         - repository_url: https://github.com/bitrise-io/sample-apps-ios-json-xcproj.git
-        - branch: bitfall-signing
+        - branch: main
         - clone_into_dir: ./_tmp
     after_run:
     - _set-build-and-assert
